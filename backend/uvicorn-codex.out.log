@@ -1,0 +1,65 @@
+INFO:     127.0.0.1:29636 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "POST /api/documents/note HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:29694 - "GET /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "GET /api/tags?page=1&page_size=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "POST /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "GET /api/chat/conversations/1506dfd4-0880-4729-ae3e-6d9e82acbde3/messages?page=1&page_size=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "POST /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "GET /api/settings/runtime HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29694 - "PATCH /api/settings/runtime HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:29694 - "DELETE /api/chat/conversations/1506dfd4-0880-4729-ae3e-6d9e82acbde3 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:29694 - "DELETE /api/chat/conversations/f482bdc2-c0f9-47fb-9474-f8137c1472f3 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:20950 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20951 - "POST /api/documents/note HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:21020 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21022 - "POST /api/documents/note HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:21024 - "GET /api/settings/runtime HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21026 - "PATCH /api/settings/runtime HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:21028 - "POST /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21030 - "DELETE /api/chat/conversations/dacee3c7-2ab4-421b-94aa-8630a971851b HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:40154 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40154 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40154 - "OPTIONS /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5759 - "OPTIONS /api/chat/conversations?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5759 - "GET /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40154 - "GET /api/chat/conversations?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28579 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28579 - "OPTIONS /api/documents/ade90347-9317-41ad-aa2e-32d2ae7489e5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28579 - "GET /api/documents/ade90347-9317-41ad-aa2e-32d2ae7489e5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29100 - "OPTIONS /api/tags?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43495 - "GET /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29100 - "GET /api/tags?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13416 - "OPTIONS /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13416 - "POST /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8833 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8833 - "GET /api/chat/conversations?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8833 - "DELETE /api/chat/conversations/2eadca39-be8a-4bf4-8f8b-e4c468739bf7 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:41122 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41122 - "GET /api/documents/ade90347-9317-41ad-aa2e-32d2ae7489e5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5946 - "GET /api/tags?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32871 - "GET /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32871 - "POST /api/chat/query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50013 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50013 - "OPTIONS /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50013 - "GET /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57686 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57686 - "GET /api/chat/conversations?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57686 - "DELETE /api/chat/conversations/343c48e4-abdd-40c3-bea5-8114a5b8af04 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:51836 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51836 - "GET /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59708 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59708 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59708 - "GET /api/documents/ade90347-9317-41ad-aa2e-32d2ae7489e5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51754 - "OPTIONS /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22731 - "GET /api/tags?page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51754 - "GET /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1707 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1707 - "GET /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55807 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50703 - "OPTIONS /api/chat/conversations?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55807 - "GET /api/documents?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50703 - "GET /api/chat/conversations?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50487 - "GET /health HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52749 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5836 - "GET /api/chat/conversations?page=1&page_size=100 HTTP/1.1" 200 OK

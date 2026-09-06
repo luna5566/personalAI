@@ -1,0 +1,6 @@
+INFO:     127.0.0.1:46736 - "GET /api/auth/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46738 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:14863 - "GET /api/auth/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50263 - "OPTIONS /api/auth/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50263 - "GET /api/auth/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22770 - "GET /api/health HTTP/1.1" 200 OK

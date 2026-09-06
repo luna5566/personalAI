@@ -1,0 +1,25 @@
+INFO:     127.0.0.1:47394 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47478 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:47480 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47482 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:47484 - "GET /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47486 - "GET /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47488 - "DELETE /api/auth/sessions/b9f978b0-f878-4820-b1f3-67a3721bf220 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:47490 - "DELETE /api/auth/sessions/fb062664-0ba6-439f-b030-1953f8ceeb8f HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:47492 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:47494 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47496 - "GET /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47937 - "OPTIONS /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47937 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:47937 - "OPTIONS /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47937 - "GET /api/documents/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47957 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47257 - "OPTIONS /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47257 - "GET /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52371 - "OPTIONS /api/auth/sessions/cf959fe6-4cf4-4e20-826d-2346b219ca0b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52371 - "DELETE /api/auth/sessions/cf959fe6-4cf4-4e20-826d-2346b219ca0b HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:52371 - "GET /api/auth/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26479 - "OPTIONS /api/auth/logout HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26479 - "POST /api/auth/logout HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:26656 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26671 - "GET /api/health HTTP/1.1" 200 OK

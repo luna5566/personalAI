@@ -1,0 +1,59 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: personal_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - personal_ai_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d personal_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      API_PREFIX: /api
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/personal_ai
+      AUTH_SECRET_KEY: change-me-in-production-use-at-least-32-bytes
+      DEFAULT_USER_ID: 00000000-0000-0000-0000-000000000001
+      RUNTIME_SETTINGS_ADMIN_USER_ID: 00000000-0000-0000-0000-000000000001
+      LLM_PROVIDER: local_extractive
+      EMBEDDING_PROVIDER: local_hash
+      EMBEDDING_MODEL: text-embedding-3-small
+      EMBEDDING_DIMENSIONS: 1536
+      STORAGE_BACKEND: local
+      STORAGE_ROOT: /data/storage
+      OCR_PROVIDER: disabled
+      SPEECH_TO_TEXT_PROVIDER: disabled
+      CORS_ORIGINS: '["http://127.0.0.1:5600","http://localhost:5600"]'
+    volumes:
+      - personal_ai_storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/api/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+volumes:
+  personal_ai_pgdata:
+  personal_ai_storage:

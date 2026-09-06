@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local config
+.env
+backend/.env
+.env.*.tmp
+backend/.env.*.tmp
+
+# Local storage
+backend/storage_data/
+.tmp/
+.tools/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
