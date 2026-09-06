@@ -163,6 +163,7 @@ class FakeChatController extends ChatController {
     String question, {
     List<String> tags = const [],
     List<String> documentIds = const [],
+    int? recentDays,
     List<String> sourceTypes = const [],
   }) async {
     lastQuestion = question;

@@ -179,6 +179,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.send));
     await tester.pump();
     expect(find.text('PDF · 第 3 页 · 相关度 90%'), findsOneWidget);
+    await tester.ensureVisible(find.text('来源资料'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('来源资料'));
     await tester.pumpAndSettle();
 
@@ -242,6 +244,7 @@ class FakeChatController extends ChatController {
     String question, {
     List<String> tags = const [],
     List<String> documentIds = const [],
+    int? recentDays,
     List<String> sourceTypes = const [],
   }) async {
     lastQuestion = question;
@@ -268,6 +271,7 @@ class CitationChatController extends ChatController {
     String question, {
     List<String> tags = const [],
     List<String> documentIds = const [],
+    int? recentDays,
     List<String> sourceTypes = const [],
   }) async {
     state = ChatState(

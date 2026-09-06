@@ -153,6 +153,11 @@ class Settings(BaseSettings):
     speech_to_text_api_key: str | None = None
     speech_to_text_model: str = "whisper-1"
 
+    rerank_provider: str = "disabled"
+    rerank_base_url: str | None = None
+    rerank_api_key: str | None = None
+    rerank_model: str = "rerank-v3.5"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

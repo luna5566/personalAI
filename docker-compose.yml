@@ -54,6 +54,18 @@ services:
       retries: 12
       start_period: 40s
 
+  web:
+    build:
+      context: ./mobile
+      args:
+        # 浏览器直接访问 API，因此用宿主机地址而不是服务名。
+        API_BASE_URL: http://127.0.0.1:8000/api
+    ports:
+      - "5600:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   personal_ai_pgdata:
   personal_ai_storage:

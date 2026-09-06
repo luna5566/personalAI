@@ -101,11 +101,37 @@ class RetryChatApi extends ChatApi {
   List<String> lastTags = const [];
 
   @override
+  Stream<ChatStreamEvent> queryStream(
+    String question, {
+    String? conversationId,
+    List<String> tags = const [],
+    List<String> documentIds = const [],
+    List<String> sourceTypes = const [],
+    int? recentDays,
+  }) async* {
+    final response = await query(
+      question,
+      conversationId: conversationId,
+      tags: tags,
+      documentIds: documentIds,
+      recentDays: recentDays,
+      sourceTypes: sourceTypes,
+    );
+    yield ChatStreamEvent.done(
+      conversationId: response.conversationId,
+      answer: response.answer,
+      citations: response.citations,
+      suggestedQuestions: response.suggestedQuestions,
+    );
+  }
+
+  @override
   Future<ChatResponse> query(
     String question, {
     String? conversationId,
     List<String> tags = const [],
     List<String> documentIds = const [],
+    int? recentDays,
     List<String> sourceTypes = const [],
   }) async {
     queryCount += 1;
@@ -128,11 +154,37 @@ class SuccessfulChatApi extends ChatApi {
   int answerIndex = 0;
 
   @override
+  Stream<ChatStreamEvent> queryStream(
+    String question, {
+    String? conversationId,
+    List<String> tags = const [],
+    List<String> documentIds = const [],
+    List<String> sourceTypes = const [],
+    int? recentDays,
+  }) async* {
+    final response = await query(
+      question,
+      conversationId: conversationId,
+      tags: tags,
+      documentIds: documentIds,
+      recentDays: recentDays,
+      sourceTypes: sourceTypes,
+    );
+    yield ChatStreamEvent.done(
+      conversationId: response.conversationId,
+      answer: response.answer,
+      citations: response.citations,
+      suggestedQuestions: response.suggestedQuestions,
+    );
+  }
+
+  @override
   Future<ChatResponse> query(
     String question, {
     String? conversationId,
     List<String> tags = const [],
     List<String> documentIds = const [],
+    int? recentDays,
     List<String> sourceTypes = const [],
   }) async {
     final index = answerIndex;

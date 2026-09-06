@@ -56,6 +56,8 @@
 - [x] 支持 TXT 解析
 - [x] 支持 Markdown 解析
 - [x] 支持 PDF 解析
+- [x] 支持 DOCX、HTML、Excel（xlsx）和 EPUB 解析
+- [x] 扫描版 PDF 抽取文本为空时回退 OCR Provider，并在未配置 OCR 时给出明确失败原因
 - [x] 添加资料处理状态流转
 - [x] 添加异步任务表
 - [x] 添加任务状态查询接口
@@ -483,6 +485,7 @@ backend/
 - [x] 使用向量相似度检索
 - [x] 实现关键词检索并与向量结果合并
 - [x] 实现 rerank 重排和最低相关度过滤
+- [x] 支持可选的 Cohere/Jina 兼容模型 Rerank Provider，失败时自动退回启发式重排
 - [x] 根据 top chunks 构建回答上下文
 - [x] 约束回答只能基于提供的资料
 - [x] 返回资料引用来源

@@ -20,13 +20,23 @@ docker compose up --build
 
 服务就绪后：
 
+- Web 应用：`http://127.0.0.1:5600`
 - API：`http://127.0.0.1:8000/api/health`
 - Swagger：`http://127.0.0.1:8000/docs`
 - Postgres：`localhost:5432`（用户/密码/库均为 `postgres` / `postgres` / `personal_ai`）
 
-默认使用本地开发模型（`local_extractive` + `local_hash`），不依赖外部 API Key。接入真实模型时，在 `docker-compose.yml` 的 `api.environment` 中配置 `LLM_*` / `EMBEDDING_*` 后重建容器。
+默认使用本地开发模型（`local_extractive` + `local_hash`），不依赖外部 API Key。接入真实模型时，在 `docker-compose.yml` 的 `api.environment` 中配置 `LLM_*` / `EMBEDDING_*` 后重建容器；可选的模型重排在 `backend/.env.example` 的 `RERANK_*` 中说明。
 
-另开终端启动 Flutter Web：
+### 方式 A 的 Web 镜像说明
+
+`web` 服务在构建期把 `API_BASE_URL` 编译进 Flutter Web 产物（默认 `http://127.0.0.1:8000/api`）。如果 API 不在本机 8000 端口，用构建参数覆盖：
+
+```powershell
+docker compose build --build-arg API_BASE_URL=https://api.example.com/api web
+docker compose up -d web
+```
+
+### 方式 A：不使用 Web 容器本地调试 Flutter
 
 ```powershell
 cd mobile

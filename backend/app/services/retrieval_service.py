@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 import re
 from uuid import UUID
@@ -7,6 +7,7 @@ from sqlalchemy import Select, exists, func, literal, or_, select, union
 from sqlalchemy.orm import Session
 
 from app.ai.embedding_provider import EmbeddingProvider, get_embedding_provider
+from app.ai.rerank_provider import get_rerank_provider
 from app.core.config import settings
 from app.core.database import set_local_hnsw_search_options
 from app.core.request_limits import (
@@ -118,8 +119,39 @@ def vector_search(
         created_after=created_after,
     )
     merged_results = _merge_results(vector_results, keyword_results)
-    reranked = rerank_chunks(query, merged_results, top_k)
+    model_reranked = _apply_model_rerank(query, merged_results, top_k)
+    if model_reranked is not None:
+        reranked = model_reranked
+    else:
+        reranked = rerank_chunks(query, merged_results, top_k)
     return _filter_relevant_chunks(reranked)
+
+
+def _apply_model_rerank(
+    query: str,
+    chunks: list[RetrievedChunk],
+    top_k: int,
+) -> list[RetrievedChunk] | None:
+    """模型重排可用时返回按 relevance score 排序的 top_k，否则返回 None 走启发式重排。"""
+    if settings.rerank_provider == "disabled" or not chunks:
+        return None
+    try:
+        provider = get_rerank_provider()
+        scores = provider.rerank(
+            query,
+            [chunk.content for chunk in chunks],
+            top_n=min(top_k * 2, len(chunks)),
+        )
+    except Exception:
+        # 模型重排失败时退回启发式重排，不影响问答可用性。
+        return None
+    rescored = [
+        replace(chunk, score=scores[index])
+        for index, chunk in enumerate(chunks)
+        if index < len(scores)
+    ]
+    rescored.sort(key=lambda item: item.score, reverse=True)
+    return rescored[:top_k]
 
 
 def keyword_search(
