@@ -57,7 +57,7 @@
 - [x] 支持 Markdown 解析
 - [x] 支持 PDF 解析
 - [x] 支持 DOCX、HTML、Excel（xlsx）和 EPUB 解析
-- [x] 扫描版 PDF 抽取文本为空时回退 OCR Provider，并在未配置 OCR 时给出明确失败原因
+- [x] 扫描版 PDF 逐页混合处理：只对没有足够文字的页回退 OCR Provider，并限制单次 OCR 页数
 - [x] 添加资料处理状态流转
 - [x] 添加异步任务表
 - [x] 添加任务状态查询接口

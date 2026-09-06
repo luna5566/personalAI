@@ -11,6 +11,7 @@ from app.ai import ocr_provider
 from app.core.config import settings
 from app.models.document import Document, DocumentSourceType
 from app.storage import storage_service
+from app.services import parsing_service as parsing_service_module
 from app.services.parsing_service import (
     SCANNED_PDF_PAGE_MIN_CHARS,
     DocumentParsingError,
@@ -186,3 +187,68 @@ def test_scanned_pdf_uses_ocr_provider(storage_root: Path, monkeypatch) -> None:
 
 def test_scanned_pdf_threshold_is_positive() -> None:
     assert SCANNED_PDF_PAGE_MIN_CHARS > 0
+
+
+def _fake_reader(monkeypatch, page_texts: list[str]) -> None:
+    import types
+
+    pages = [
+        types.SimpleNamespace(extract_text=lambda text=text: text)
+        for text in page_texts
+    ]
+    monkeypatch.setattr(
+        "app.services.parsing_service.PdfReader",
+        lambda path: types.SimpleNamespace(pages=pages),
+    )
+
+
+def test_mixed_pdf_ocrs_only_low_text_pages(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ocr_provider", "openai_compatible")
+    ocr_pages: list[list[int]] = []
+
+    def fake_ocr_pages(path: Path, page_indexes: list[int]) -> list[str]:
+        ocr_pages.append(list(page_indexes))
+        return ["OCR 识别文本" for _ in page_indexes]
+
+    monkeypatch.setattr(parsing_service_module, "_ocr_pdf_pages", fake_ocr_pages)
+    _fake_reader(monkeypatch, [
+        "第一页有足够的正文内容可以入索引",
+        "",
+        "第三页有足够的正文内容可以入索引",
+    ])
+
+    parsed = parsing_service_module._parse_pdf_file(tmp_path / "mixed.pdf")
+
+    assert ocr_pages == [[1]]
+    assert "[第 2 页]\nOCR 识别文本" in parsed.raw_text
+    assert "第一页有足够的正文内容" in parsed.raw_text
+    assert "第三页有足够的正文内容" in parsed.raw_text
+    assert parsed.metadata["parser"] == "pypdf+ocr"
+
+
+def test_mixed_pdf_keeps_text_pages_when_ocr_disabled(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ocr_provider", "disabled")
+    _fake_reader(monkeypatch, [
+        "第一页有足够的正文内容可以入索引",
+        "",
+        "第三页有足够的正文内容可以入索引",
+    ])
+
+    parsed = parsing_service_module._parse_pdf_file(tmp_path / "mixed.pdf")
+
+    assert "第一页有足够的正文内容" in parsed.raw_text
+    assert "第三页有足够的正文内容" in parsed.raw_text
+    assert "[第 2 页]" not in parsed.raw_text
+    assert parsed.metadata["parser"] == "pypdf"
+
+
+def test_mixed_pdf_rejects_excessive_ocr_pages(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ocr_provider", "openai_compatible")
+    _fake_reader(
+        monkeypatch,
+        [""] * (parsing_service_module.SCANNED_PDF_OCR_PAGE_LIMIT + 1),
+    )
+
+    with pytest.raises(DocumentParsingError) as exc_info:
+        parsing_service_module._parse_pdf_file(tmp_path / "huge.pdf")
+    assert "上限" in str(exc_info.value)

@@ -87,68 +87,79 @@ def _parse_markdown_file(path: Path) -> ParsedDocument:
 def _parse_pdf_file(path: Path) -> ParsedDocument:
     reader = PdfReader(str(path))
     page_count = len(reader.pages)
+    page_texts = [(page.extract_text() or "").strip() for page in reader.pages]
+    low_text_indexes = [
+        index
+        for index, text in enumerate(page_texts)
+        if len(text) < SCANNED_PDF_PAGE_MIN_CHARS
+    ]
+
+    ocr_used = False
+    if low_text_indexes:
+        if settings.ocr_provider == "disabled":
+            if not any(page_texts):
+                raise DocumentParsingError(
+                    "这是一个扫描版 PDF，没有可提取的文字。请配置 OCR Provider 后重试。"
+                )
+            # 混合型 PDF：低文字页（如封面图片）保持原样，其余页照常入索引。
+        else:
+            if len(low_text_indexes) > SCANNED_PDF_OCR_PAGE_LIMIT:
+                raise DocumentParsingError(
+                    f"PDF 中有 {len(low_text_indexes)} 页没有足够的可提取文字，"
+                    f"超过单次 OCR 上限（{SCANNED_PDF_OCR_PAGE_LIMIT} 页），请拆分后重新上传"
+                )
+            ocr_texts = _ocr_pdf_pages(path, low_text_indexes)
+            for index, text in zip(low_text_indexes, ocr_texts):
+                page_texts[index] = text
+            ocr_used = True
+
     output = StringIO()
     wrote_page = False
-    for index, page in enumerate(reader.pages, start=1):
-        text = page.extract_text() or ""
-        cleaned = text.strip()
-        if cleaned:
+    for index, text in enumerate(page_texts, start=1):
+        if text:
             if wrote_page:
                 output.write("\n\n\n")
-            output.write(f"[第 {index} 页]\n{cleaned}")
+            output.write(f"[第 {index} 页]\n{text}")
             wrote_page = True
 
-    raw_text = output.getvalue()
-    metadata = {"parser": "pypdf", "page_count": page_count}
-    if _looks_like_scanned_pdf(raw_text, page_count):
-        ocr_text = _parse_scanned_pdf(path, page_count)
-        return ParsedDocument(raw_text=ocr_text, metadata={"parser": "pypdf+ocr", "page_count": page_count})
-    return ParsedDocument(raw_text=raw_text, metadata=metadata)
+    return ParsedDocument(
+        raw_text=output.getvalue(),
+        metadata={
+            "parser": "pypdf+ocr" if ocr_used else "pypdf",
+            "page_count": page_count,
+        },
+    )
 
 
-def _looks_like_scanned_pdf(raw_text: str, page_count: int) -> bool:
-    if page_count == 0:
-        return False
-    avg_chars = len(raw_text.strip()) / page_count
-    return avg_chars < SCANNED_PDF_PAGE_MIN_CHARS
+# 单个 PDF 允许回退 OCR 的最大页数，防止超大扫描件产生失控的 OCR 开销。
+SCANNED_PDF_OCR_PAGE_LIMIT = 100
 
 
-def _parse_scanned_pdf(path: Path, page_count: int) -> str:
+def _ocr_pdf_pages(path: Path, page_indexes: list[int]) -> list[str]:
+    """对指定页（0 基）渲染图片并 OCR，返回与 page_indexes 一一对应的文本。"""
     try:
         import fitz  # PyMuPDF
     except ImportError as exc:  # pragma: no cover - 依赖在 requirements 中声明
         raise DocumentParsingError(
-            "PDF 中没有可提取的文字。识别扫描版 PDF 需要 OCR Provider，且后端需安装 PyMuPDF。"
+            "识别扫描版 PDF 需要 OCR Provider，且后端需安装 PyMuPDF。"
         ) from exc
 
-    if settings.ocr_provider == "disabled":
-        raise DocumentParsingError(
-            "这是一个扫描版 PDF，没有可提取的文字。请配置 OCR Provider 后重试。"
-        )
-
     ocr = get_ocr_provider()
-    output = StringIO()
-    wrote_page = False
+    results: list[str] = []
     with fitz.open(path) as doc:
-        for index, page in enumerate(doc, start=1):
-            pix = page.get_pixmap(dpi=150)
+        for index in page_indexes:
+            pix = doc[index].get_pixmap(dpi=150)
             png = pix.tobytes("png")
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as handle:
                 handle.write(png)
                 temp_path = Path(handle.name)
             try:
-                text = ocr.extract_text(temp_path, mime_type="image/png").strip()
+                results.append(ocr.extract_text(temp_path, mime_type="image/png").strip())
             finally:
                 temp_path.unlink(missing_ok=True)
-            if text:
-                if wrote_page:
-                    output.write("\n\n\n")
-                output.write(f"[第 {index} 页]\n{text}")
-                wrote_page = True
-    result = output.getvalue()
-    if not result.strip():
-        raise DocumentParsingError("扫描版 PDF 识别失败，未得到任何文字，请检查 OCR Provider 配置")
-    return result
+    if page_indexes and not any(results):
+        raise DocumentParsingError("扫描页识别失败，未得到任何文字，请检查 OCR Provider 配置")
+    return results
 
 
 def _parse_image_file(path: Path, mime_type: str | None) -> ParsedDocument:

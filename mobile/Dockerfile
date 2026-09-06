@@ -20,6 +20,12 @@ RUN printf 'server {\n\
     root /usr/share/nginx/html;\n\
     index index.html;\n\
 \n\
+    gzip on;\n\
+    gzip_comp_level 6;\n\
+    gzip_min_length 1024;\n\
+    gzip_vary on;\n\
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;\n\
+\n\
     location /assets/ {\n\
         expires 30d;\n\
         add_header Cache-Control "public, immutable";\n\

@@ -12,6 +12,22 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: personal_ai
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d personal_ai"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/personal_ai
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,6 +39,10 @@ jobs:
         run: pip install -r requirements-dev.txt
       - name: Copy env example
         run: cp .env.example .env
+      - name: Run migrations
+        run: alembic upgrade head
+      - name: Check migrations up to date
+        run: alembic check
       - name: Run tests
         run: python -m pytest -q
 
