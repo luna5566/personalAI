@@ -64,6 +64,10 @@ class KnowledgeDocument {
       'markdown' => 'Markdown',
       'image' => '图片',
       'audio' => '音频',
+      'docx' => 'Word',
+      'html' => '网页',
+      'excel' => '表格',
+      'epub' => 'EPUB',
       'ai_generated' => 'AI 生成',
       _ => sourceType,
     };
@@ -149,6 +153,10 @@ class RelatedKnowledgeDocument {
       'markdown' => 'Markdown',
       'image' => '图片',
       'audio' => '音频',
+      'docx' => 'Word',
+      'html' => '网页',
+      'excel' => '表格',
+      'epub' => 'EPUB',
       'ai_generated' => 'AI 生成',
       _ => sourceType,
     };

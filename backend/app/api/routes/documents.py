@@ -331,6 +331,19 @@ def _detect_source_type(filename: str, content_type: str | None) -> DocumentSour
         return DocumentSourceType.PDF
     if suffix in {"md", "markdown"}:
         return DocumentSourceType.MARKDOWN
+    if suffix == "docx" or normalized_content_type == (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
+        return DocumentSourceType.DOCX
+    if suffix in {"html", "htm"} or normalized_content_type == "text/html":
+        return DocumentSourceType.HTML
+    if suffix in {"xlsx", "xlsm"} or normalized_content_type in {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel.sheet.macroenabled.12",
+    }:
+        return DocumentSourceType.EXCEL
+    if suffix == "epub" or normalized_content_type == "application/epub+zip":
+        return DocumentSourceType.EPUB
     if suffix == "txt" or normalized_content_type.startswith("text/"):
         return DocumentSourceType.TXT
     if suffix in {"png", "jpg", "jpeg", "webp", "bmp", "gif", "tif", "tiff"} or normalized_content_type.startswith(

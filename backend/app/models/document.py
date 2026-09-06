@@ -28,6 +28,10 @@ class DocumentSourceType(str, Enum):
     MARKDOWN = "markdown"
     IMAGE = "image"
     AUDIO = "audio"
+    DOCX = "docx"
+    HTML = "html"
+    EXCEL = "excel"
+    EPUB = "epub"
     AI_GENERATED = "ai_generated"
 
 
