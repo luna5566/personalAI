@@ -158,6 +158,9 @@ class Settings(BaseSettings):
     rerank_api_key: str | None = None
     rerank_model: str = "rerank-v3.5"
 
+    metrics_enabled: bool = True
+    log_format: str = "text"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

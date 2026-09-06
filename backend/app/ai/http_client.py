@@ -6,11 +6,13 @@ from collections import deque
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Any
 
 import httpx
 
 from app.core.config import settings
+from app.core.observability import record_provider_call
 
 
 PROVIDER_RESPONSE_READ_CHUNK_BYTES = 64 * 1024
@@ -103,10 +105,17 @@ def post_json_limited(
     ):
         raise ValueError("Provider response size limit must be a positive integer")
 
-    with provider_request_limiter.reserve():
-        with httpx.stream("POST", url, **request_kwargs) as response:
-            response.raise_for_status()
-            return _read_limited_json(response, max_response_size_bytes)
+    started_at = perf_counter()
+    try:
+        with provider_request_limiter.reserve():
+            with httpx.stream("POST", url, **request_kwargs) as response:
+                response.raise_for_status()
+                return _read_limited_json(response, max_response_size_bytes)
+    except Exception:
+        record_provider_call(url, started_at, "error")
+        raise
+    else:
+        record_provider_call(url, started_at, "ok")
 
 
 def iter_openai_chat_completion_deltas(
@@ -122,6 +131,22 @@ def iter_openai_chat_completion_deltas(
     ):
         raise ValueError("Provider response size limit must be a positive integer")
 
+    total_bytes = 0
+    started_at = perf_counter()
+    try:
+        yield from _iter_openai_stream(url, max_response_size_bytes, request_kwargs)
+    except Exception:
+        record_provider_call(url, started_at, "error")
+        raise
+    else:
+        record_provider_call(url, started_at, "ok")
+
+
+def _iter_openai_stream(
+    url: str,
+    max_response_size_bytes: int,
+    request_kwargs: dict[str, Any],
+) -> Iterator[str]:
     total_bytes = 0
     with provider_request_limiter.reserve():
         with httpx.stream("POST", url, **request_kwargs) as response:

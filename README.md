@@ -80,7 +80,27 @@ flutter test
 flutter build web --dart-define=API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
-Windows 构建含插件的桌面应用前需要启用 Developer Mode。Android 分发构建还需要把本地 debug 签名替换为私有 release 签名。
+Windows 构建含插件的桌面应用前需要启用 Developer Mode。
+
+## Android release 签名
+
+分发构建需要私有 release 签名。生成 keystore 并创建 `mobile/android/key.properties`（已被 git 忽略，模板见 `key.properties.example`）：
+
+```powershell
+keytool -genkey -v -keystore personal-ai-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias personal-ai
+copy mobile\android\key.properties.example mobile\android\key.properties
+# 编辑 key.properties，填入 keystore 路径和密码
+cd mobile
+flutter build apk --release
+```
+
+没有 `key.properties` 时，release 构建自动回退到 debug 签名，仅供本机预览。
+
+## 可观测性
+
+- `GET /api/metrics`：Prometheus 指标（HTTP 请求计数/时延按路由模板，AI Provider 出站调用按域名）。可用 `METRICS_ENABLED=false` 关闭；公网部署时应通过网络策略限制访问。
+- 请求追踪：每个响应带 `X-Request-ID`，客户端可传入同名请求头串联链路。
+- 结构化日志：设置 `LOG_FORMAT=json` 输出 JSON 日志（含 `request_id`），默认人类可读格式。
 
 ## 备份与恢复
 

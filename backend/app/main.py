@@ -2,13 +2,23 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from contextlib import suppress
+from time import perf_counter
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.exceptions import PRIVATE_RESPONSE_HEADERS, register_exception_handlers
+from app.core.logging_config import configure_logging
+from app.core.observability import (
+    http_request_duration_seconds,
+    http_requests_total,
+    new_request_id,
+    render_metrics,
+    request_id_var,
+)
 from app.core.request_body_limit import RequestBodyLimitMiddleware
 from app.workers.job_recovery import (
     JobRecoveryState,
@@ -94,6 +104,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     app = FastAPI(
         title=settings.app_name,
         debug=False,
@@ -104,6 +115,7 @@ def create_app() -> FastAPI:
         RequestBodyLimitMiddleware,
         max_body_size_bytes=settings.max_request_body_size_bytes,
     )
+    app.add_middleware(RequestObservabilityMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -121,9 +133,47 @@ def create_app() -> FastAPI:
                 response.headers[name] = value
         return response
 
+    if settings.metrics_enabled:
+
+        @app.get(f"{settings.api_prefix}/metrics", include_in_schema=False)
+        def metrics() -> Response:
+            payload, content_type = render_metrics()
+            return Response(content=payload, media_type=content_type)
+
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_prefix)
     return app
+
+
+class RequestObservabilityMiddleware(BaseHTTPMiddleware):
+    """生成/透传 X-Request-ID，并记录每个请求的 Prometheus 指标。"""
+
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("x-request-id") or new_request_id()
+        token = request_id_var.set(request_id)
+        started_at = perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            self._record(request, "500", perf_counter() - started_at)
+            raise
+        finally:
+            request_id_var.reset(token)
+        response.headers["X-Request-ID"] = request_id
+        self._record(request, str(response.status_code), perf_counter() - started_at)
+        return response
+
+    @staticmethod
+    def _record(request: Request, status: str, duration: float) -> None:
+        if settings.metrics_enabled:
+            route = getattr(request.scope.get("route"), "path", "unmatched")
+            method = request.method
+            http_requests_total.labels(
+                method=method, route=route, status=status
+            ).inc()
+            http_request_duration_seconds.labels(
+                method=method, route=route
+            ).observe(duration)
 
 
 def _is_api_path(path: str) -> bool:
