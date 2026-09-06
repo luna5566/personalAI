@@ -81,3 +81,30 @@ flutter build web --dart-define=API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
 Windows 构建含插件的桌面应用前需要启用 Developer Mode。Android 分发构建还需要把本地 debug 签名替换为私有 release 签名。
+
+## 备份与恢复
+
+个人资料和索引都在 PostgreSQL 与 `personal_ai_storage` 卷里。使用 Docker Compose 运行时，执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ops\backup.ps1
+powershell -ExecutionPolicy Bypass -File ops\backup.ps1 -OutputDir D:\backups -KeepDays 14
+```
+
+脚本会把数据库（`pg_dump -Fc`）和文件存储卷分别备份到指定目录，并按 `KeepDays` 清理过期备份。
+
+恢复数据库（PowerShell 管道会破坏二进制流，用 `docker cp` 传入容器）：
+
+```powershell
+docker cp backups\personal_ai_db_时间戳.dump db:/tmp/dump
+docker compose exec db pg_restore -U postgres -d personal_ai --clean --if-exists /tmp/dump
+docker compose exec db rm /tmp/dump
+```
+
+恢复文件存储：
+
+```powershell
+docker run --rm -v personal_ai_storage:/data -v (Resolve-Path backups).Path`:/backup alpine sh -c "cd /data && rm -rf ./* && tar xzf /backup/personal_ai_storage_时间戳.tar.gz -C /data"
+```
+
+注意：非 Docker 部署时直接用本机 `pg_dump` / `pg_restore`，并备份 `backend/storage_data` 目录。恢复旧备份后，如模型配置发生过变化，可在管理页执行全量索引重建。

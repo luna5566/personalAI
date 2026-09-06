@@ -92,7 +92,9 @@ def query(
         retrieved = retrieval_service.vector_search(
             db=db,
             user_id=user_id,
-            query=_retrieval_query(payload.question, prepared.history),
+            query=_retrieval_query_with_rewrite(
+                llm_provider, payload.question, prepared.history
+            ),
             top_k=8,
             document_ids=document_ids,
             tag_names=tag_names,
@@ -179,7 +181,9 @@ def query_stream(
         retrieved = retrieval_service.vector_search(
             db=db,
             user_id=user_id,
-            query=_retrieval_query(payload.question, prepared.history),
+            query=_retrieval_query_with_rewrite(
+                llm_provider, payload.question, prepared.history
+            ),
             top_k=8,
             document_ids=document_ids,
             tag_names=tag_names,
@@ -808,6 +812,22 @@ def _bounded_message_citations_expression():
         .select_from(limited)
         .scalar_subquery()
     )
+
+
+def _retrieval_query_with_rewrite(
+    llm_provider: LLMProvider,
+    question: str,
+    history: list[tuple[str, str]],
+) -> str:
+    """多轮追问优先用 LLM 改写成独立查询，失败时回退到历史拼接。"""
+    if history:
+        try:
+            rewritten = llm_provider.rewrite_retrieval_query(question, history)
+        except Exception:
+            rewritten = None
+        if rewritten:
+            return rewritten
+    return _retrieval_query(question, history)
 
 
 def _retrieval_query(question: str, history: list[tuple[str, str]]) -> str:

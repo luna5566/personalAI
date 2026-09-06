@@ -26,3 +26,4 @@ backend/storage_data/
 Thumbs.db
 .idea/
 .vscode/
+backups/

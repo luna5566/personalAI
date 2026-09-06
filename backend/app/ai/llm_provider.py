@@ -38,6 +38,14 @@ class LLMProvider(ABC):
             "基于这些资料给我一个行动计划",
         ]
 
+    def rewrite_retrieval_query(
+        self,
+        question: str,
+        history: list[tuple[str, str]],
+    ) -> str | None:
+        """把带上下文依赖的追问改写成独立检索查询；不支持时返回 None。"""
+        return None
+
     def organize_with_context(self, mode: str, context: str) -> str:
         prompt = f"整理方式：{mode}\n\n资料：\n{context}"
         return self.answer_with_context(prompt, context)
@@ -126,6 +134,48 @@ class OpenAICompatibleLLMProvider(LLMProvider):
             timeout=90,
         )
         return data["choices"][0]["message"]["content"]
+
+    def rewrite_retrieval_query(
+        self,
+        question: str,
+        history: list[tuple[str, str]],
+    ) -> str | None:
+        recent_turns = "\n".join(
+            f"{'用户' if role == 'user' else '助手'}：{content.strip()[:300]}"
+            for role, content in history[-4:]
+            if content.strip()
+        )
+        if not recent_turns:
+            return None
+        prompt = (
+            "你是检索查询改写助手。根据最近对话，把用户的新问题改写成一条"
+            "不依赖上下文即可理解的独立检索查询。保留原问题的语言，"
+            "只输出查询本身，不要解释、不要加引号。\n\n"
+            f"最近对话：\n{recent_turns}\n\n"
+            f"新问题：{question.strip()}\n\n"
+            "独立检索查询："
+        )
+        data: dict[str, Any] = post_json_limited(
+            f"{self.base_url}/chat/completions",
+            max_response_size_bytes=settings.ai_provider_max_response_size_bytes,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json={
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": "你只输出改写后的检索查询。"},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0,
+            },
+            timeout=30,
+        )
+        lines = [
+            line.strip().strip('"“”')
+            for line in (data["choices"][0]["message"]["content"] or "").splitlines()
+        ]
+        if not lines or not lines[0] or any(lines[1:]) or len(lines[0]) > 200:
+            return None
+        return lines[0]
 
     def stream_answer_with_context(
         self,
