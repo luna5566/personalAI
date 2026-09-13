@@ -1,9 +1,0 @@
-INFO:     127.0.0.1:27486 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     127.0.0.1:27488 - "POST /api/auth/register HTTP/1.1" 201 Created
-INFO:     127.0.0.1:27490 - "GET /api/auth/registration-invites HTTP/1.1" 403 Forbidden
-INFO:     127.0.0.1:27492 - "POST /api/auth/registration-invites HTTP/1.1" 201 Created
-INFO:     127.0.0.1:27494 - "GET /api/auth/registration-invites?status=active&page=1&page_size=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:27497 - "DELETE /api/auth/registration-invites/51d3416b-7d15-495d-a156-4369e46a8d1d HTTP/1.1" 204 No Content
-INFO:     127.0.0.1:27499 - "DELETE /api/auth/registration-invites/51d3416b-7d15-495d-a156-4369e46a8d1d HTTP/1.1" 204 No Content
-INFO:     127.0.0.1:27501 - "GET /api/auth/registration-invites?status=revoked HTTP/1.1" 200 OK
-INFO:     127.0.0.1:27503 - "POST /api/auth/register HTTP/1.1" 201 Created

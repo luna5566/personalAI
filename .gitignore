@@ -4,6 +4,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 .venv/
@@ -20,6 +22,11 @@ backend/.env.*.tmp
 backend/storage_data/
 .tmp/
 .tools/
+
+# Local dev runtime output
+*.log
+bg-*.txt
+backend/bg-*.txt
 
 # OS/editor
 .DS_Store

@@ -1,0 +1,2 @@
+# shell 脚本必须保持 LF，否则 Docker 构建上下文里的 entrypoint 脚本无法在容器内执行
+*.sh text eol=lf
