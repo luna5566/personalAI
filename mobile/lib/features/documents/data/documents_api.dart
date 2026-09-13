@@ -45,6 +45,15 @@ class DocumentsApi {
     return DocumentPage.fromJson(response.data!);
   }
 
+  /// 下载整份资料的 Markdown 导出（后端 /documents/{id}/export.md）。
+  Future<Uint8List> exportMarkdownBytes(String id) async {
+    final response = await _dio.get<List<int>>(
+      '/documents/$id/export.md',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data ?? const <int>[]);
+  }
+
   Future<KnowledgeDocument> getDocument(
     String id, {
     int contentOffset = 0,

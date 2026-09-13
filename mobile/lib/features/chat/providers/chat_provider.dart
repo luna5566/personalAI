@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -108,6 +109,8 @@ class ChatController extends Notifier<ChatState> {
   @override
   ChatState build() => const ChatState();
 
+  CancelToken? _streamCancelToken;
+
   Future<void> ask(
     String question, {
     List<String> tags = const [],
@@ -124,11 +127,8 @@ class ChatController extends Notifier<ChatState> {
       ...state.messages,
       ChatMessage(role: ChatMessageRole.user, text: trimmed),
     ]);
-    final pendingMessages = pendingWindow.messages;
-    final olderMessagesHidden =
-        state.olderMessagesHidden || pendingWindow.truncated;
     state = state.copyWith(
-      messages: pendingMessages,
+      messages: pendingWindow.messages,
       loading: true,
       clearError: true,
       scopeTags: tags,
@@ -136,16 +136,83 @@ class ChatController extends Notifier<ChatState> {
       scopeSourceTypes: sourceTypes,
       scopeRecentDays: recentDays,
       clearRecentDays: recentDays == null,
-      olderMessagesHidden: olderMessagesHidden,
+      olderMessagesHidden:
+          state.olderMessagesHidden || pendingWindow.truncated,
     );
+    await _runTurn(
+      trimmed,
+      regenerate: false,
+      tags: tags,
+      documentIds: documentIds,
+      sourceTypes: sourceTypes,
+      recentDays: recentDays,
+    );
+  }
+
+  /// 重新生成最后一条回答：清除本地旧回答后，用同一个问题重发（regenerate）。
+  Future<void> regenerate() async {
+    if (state.loading) {
+      return;
+    }
+    var lastUserIndex = -1;
+    for (var i = state.messages.length - 1; i >= 0; i -= 1) {
+      if (state.messages[i].role == ChatMessageRole.user) {
+        lastUserIndex = i;
+        break;
+      }
+    }
+    if (lastUserIndex < 0 || state.conversationId == null) {
+      return;
+    }
+    final question = state.messages[lastUserIndex].text.trim();
+    if (question.isEmpty) {
+      return;
+    }
+    final pendingWindow = _boundedChatMessages(
+      state.messages.sublist(0, lastUserIndex + 1),
+    );
+    state = state.copyWith(
+      messages: pendingWindow.messages,
+      loading: true,
+      clearError: true,
+      olderMessagesHidden:
+          state.olderMessagesHidden || pendingWindow.truncated,
+    );
+    await _runTurn(
+      question,
+      regenerate: true,
+      tags: state.scopeTags,
+      documentIds: state.scopeDocumentIds,
+      sourceTypes: state.scopeSourceTypes,
+      recentDays: state.scopeRecentDays,
+    );
+  }
+
+  /// 停止当前流式回答：取消请求并保留已生成的部分内容。
+  void stopStreaming() {
+    _streamCancelToken?.cancel('用户停止生成');
+    _streamCancelToken = null;
+  }
+
+  Future<void> _runTurn(
+    String trimmed, {
+    required bool regenerate,
+    required List<String> tags,
+    required List<String> documentIds,
+    required List<String> sourceTypes,
+    required int? recentDays,
+  }) async {
+    final pendingMessages = state.messages;
+    final olderMessagesHidden = state.olderMessagesHidden;
+    final cancelToken = CancelToken();
+    _streamCancelToken = cancelToken;
+    var conversationId = state.conversationId;
+    var answerBuffer = '';
+    var citations = const <Citation>[];
+    var suggestedQuestions = const <String>[];
+    var sawDone = false;
 
     try {
-      var conversationId = state.conversationId;
-      var answerBuffer = '';
-      var citations = const <Citation>[];
-      var suggestedQuestions = const <String>[];
-      var sawDone = false;
-
       await for (final event in ref.read(chatApiProvider).queryStream(
             trimmed,
             conversationId: conversationId,
@@ -153,6 +220,8 @@ class ChatController extends Notifier<ChatState> {
             documentIds: documentIds,
             sourceTypes: sourceTypes,
             recentDays: recentDays,
+            regenerate: regenerate,
+            cancelToken: cancelToken,
           )) {
         if (event.isError) {
           throw Exception(event.message ?? '提问失败，请稍后重试');
@@ -221,20 +290,57 @@ class ChatController extends Notifier<ChatState> {
       ref.invalidate(conversationPageProvider);
       ref.invalidate(filteredConversationPageProvider);
     } catch (error) {
-      state = ChatState(
-        conversationId: state.conversationId,
-        resumedFromHistory: state.resumedFromHistory,
-        olderMessagesHidden: olderMessagesHidden,
-        messages: pendingMessages,
-        error: userFacingErrorMessage(
-          error,
-          fallback: '提问失败，请稍后重试',
-        ),
-        scopeTags: tags,
-        scopeDocumentIds: documentIds,
-        scopeSourceTypes: sourceTypes,
-        scopeRecentDays: recentDays,
-      );
+      final canceled = error is DioException && CancelToken.isCancel(error);
+      if (canceled && answerBuffer.isNotEmpty) {
+        // 用户停止生成：保留已产出的部分内容，标记为已中断。
+        final interruptedWindow = _boundedChatMessages([
+          ...pendingMessages,
+          ChatMessage(
+            role: ChatMessageRole.assistant,
+            text: answerBuffer,
+            interrupted: true,
+          ),
+        ]);
+        state = ChatState(
+          conversationId: conversationId,
+          resumedFromHistory: state.resumedFromHistory,
+          olderMessagesHidden:
+              olderMessagesHidden || interruptedWindow.truncated,
+          scopeTags: tags,
+          scopeDocumentIds: documentIds,
+          scopeSourceTypes: sourceTypes,
+          scopeRecentDays: recentDays,
+          messages: interruptedWindow.messages,
+        );
+      } else if (canceled) {
+        state = ChatState(
+          conversationId: conversationId,
+          resumedFromHistory: state.resumedFromHistory,
+          olderMessagesHidden: olderMessagesHidden,
+          messages: pendingMessages,
+          scopeTags: tags,
+          scopeDocumentIds: documentIds,
+          scopeSourceTypes: sourceTypes,
+          scopeRecentDays: recentDays,
+        );
+      } else {
+        state = ChatState(
+          conversationId: state.conversationId,
+          resumedFromHistory: state.resumedFromHistory,
+          olderMessagesHidden: olderMessagesHidden,
+          messages: pendingMessages,
+          error: userFacingErrorMessage(
+            error,
+            fallback: '提问失败，请稍后重试',
+          ),
+          scopeTags: tags,
+          scopeDocumentIds: documentIds,
+          scopeSourceTypes: sourceTypes,
+          scopeRecentDays: recentDays,
+        );
+      }
+    } finally {
+      _streamCancelToken = null;
     }
   }
 

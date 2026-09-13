@@ -367,6 +367,52 @@ def get_document_detail(
     return _document_detail_view_from_row(row) if row is not None else None
 
 
+def export_document_markdown(
+    db: Session,
+    user_id: UUID,
+    document_id: UUID,
+) -> tuple[str, str] | None:
+    """返回 (文件名, Markdown 文本)；资料不存在时返回 None。"""
+    document = db.scalar(
+        select(Document).where(
+            Document.id == document_id,
+            Document.user_id == user_id,
+        )
+    )
+    if document is None:
+        return None
+    cleaned = document.cleaned_text or ""
+    raw = document.raw_text or ""
+    content = cleaned or raw or (document.summary or "")
+    tag_names = tag_service.document_tag_names(db, document.id)
+    created = document.created_at
+    lines = ["---"]
+    lines.append(f'title: "{(document.title or "未命名").replace(chr(34), chr(39))}"')
+    lines.append(f"source: {document.source_type}")
+    if created is not None:
+        lines.append(f"created_at: {created.isoformat()}")
+    if tag_names:
+        lines.append("tags: [" + ", ".join(tag_names) + "]")
+    lines.append("---")
+    lines.append("")
+    lines.append(content)
+    return _markdown_filename(document.title), chr(10).join(lines)
+
+
+_FILENAME_FORBIDDEN = frozenset(
+    '/:*?"<>|' + "".join(chr(code) for code in range(0x20))
+)
+
+
+def _markdown_filename(title: str | None) -> str:
+    safe = "".join(
+        "_" if char in _FILENAME_FORBIDDEN else char
+        for char in (title or "").strip()
+    )
+    safe = safe.strip(". ") or "document"
+    return safe[:80] + ".md"
+
+
 def to_document_detail_view(
     document: Document,
     *,

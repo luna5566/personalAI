@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +35,7 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
 
   bool _organizing = false;
   bool _savingMeta = false;
+  bool _exporting = false;
   late int _contentOffset;
 
   DocumentDetailQuery get _detailQuery => (
@@ -82,6 +84,19 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
                   )
                 : const Icon(Icons.edit_outlined),
             tooltip: '编辑资料',
+          ),
+          IconButton(
+            onPressed:
+                _exporting || document.value?.isIndexed != true
+                    ? null
+                    : () => _exportMarkdown(document.value!),
+            icon: _exporting
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.ios_share_outlined),
+            tooltip: '导出 Markdown',
           ),
           PopupMenuButton<String>(
             enabled: !_organizing && document.value?.isIndexed == true,
@@ -190,6 +205,49 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
         setState(() => _savingMeta = false);
       }
     }
+  }
+
+  Future<void> _exportMarkdown(KnowledgeDocument document) async {
+    setState(() => _exporting = true);
+    try {
+      final bytes = await ref
+          .read(documentsApiProvider)
+          .exportMarkdownBytes(document.id);
+      final uri = await FilePicker.saveFile(
+        fileName: _exportFileName(document.title),
+        bytes: bytes,
+        mimeType: 'text/markdown',
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(uri == null ? '已取消导出' : '已导出 Markdown')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            userFacingErrorMessage(error, fallback: '导出失败，请稍后重试'),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
+  }
+
+  String _exportFileName(String title) {
+    final safe = title.replaceAll(
+      RegExp(r'[\\/:*?"<>|]'),
+      '_',
+    );
+    return '${safe.trim().isEmpty ? 'document' : safe.trim()}.md';
   }
 
   void _askDocument(KnowledgeDocument document) {

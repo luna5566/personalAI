@@ -108,6 +108,8 @@ class RetryChatApi extends ChatApi {
     List<String> documentIds = const [],
     List<String> sourceTypes = const [],
     int? recentDays,
+    bool regenerate = false,
+    CancelToken? cancelToken,
   }) async* {
     final response = await query(
       question,
@@ -133,6 +135,7 @@ class RetryChatApi extends ChatApi {
     List<String> documentIds = const [],
     int? recentDays,
     List<String> sourceTypes = const [],
+    bool regenerate = false,
   }) async {
     queryCount += 1;
     lastTags = tags;
@@ -161,6 +164,8 @@ class SuccessfulChatApi extends ChatApi {
     List<String> documentIds = const [],
     List<String> sourceTypes = const [],
     int? recentDays,
+    bool regenerate = false,
+    CancelToken? cancelToken,
   }) async* {
     final response = await query(
       question,
@@ -186,6 +191,7 @@ class SuccessfulChatApi extends ChatApi {
     List<String> documentIds = const [],
     int? recentDays,
     List<String> sourceTypes = const [],
+    bool regenerate = false,
   }) async {
     final index = answerIndex;
     answerIndex += 1;

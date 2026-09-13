@@ -125,9 +125,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       if (index == chat.messages.length) {
                         return const _TypingIndicator();
                       }
+                      final isLast = index == chat.messages.length - 1;
                       return _MessageBubble(
                         message: chat.messages[index],
                         onSuggestedQuestion: _askSuggestedQuestion,
+                        showRegenerate:
+                            isLast &&
+                            !chat.loading &&
+                            chat.messages[index].role ==
+                                ChatMessageRole.assistant,
+                        onRegenerate: () => ref
+                            .read(chatControllerProvider.notifier)
+                            .regenerate(),
                       );
                     },
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -177,14 +186,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   IconButton(
                     onPressed: chat.loading ? null : _toggleListening,
                     icon: Icon(_listening ? Icons.mic : Icons.mic_none),
-                    color:
-                        _listening ? Theme.of(context).colorScheme.error : null,
+                    color: _listening
+                        ? Theme.of(context).colorScheme.error
+                        : null,
                     tooltip: _listening ? '停止语音输入' : '语音输入',
                   ),
                   IconButton.filled(
-                    onPressed: chat.loading ? null : _submitQuestion,
-                    icon: const Icon(Icons.send),
-                    tooltip: '发送',
+                    onPressed: chat.loading
+                        ? () => ref
+                              .read(chatControllerProvider.notifier)
+                              .stopStreaming()
+                        : _submitQuestion,
+                    icon: Icon(chat.loading ? Icons.stop : Icons.send),
+                    tooltip: chat.loading ? '停止生成' : '发送',
                   ),
                 ],
               ),
@@ -207,7 +221,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
     }
     _clearInput();
-    await ref.read(chatControllerProvider.notifier).ask(
+    await ref
+        .read(chatControllerProvider.notifier)
+        .ask(
           question,
           tags: _selectedTags.toList(),
           documentIds: _selectedDocumentIds.toList(),
@@ -248,18 +264,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           return;
         }
         setState(() => _listening = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('语音识别失败，请检查麦克风权限后重试')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('语音识别失败，请检查麦克风权限后重试')));
       },
     );
     if (!mounted) {
       return;
     }
     if (!available) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('当前设备不支持语音识别或未授予麦克风权限')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('当前设备不支持语音识别或未授予麦克风权限')));
       return;
     }
     setState(() => _listening = true);
@@ -270,7 +286,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       return;
     }
     _clearInput();
-    await ref.read(chatControllerProvider.notifier).ask(
+    await ref
+        .read(chatControllerProvider.notifier)
+        .ask(
           question,
           tags: _selectedTags.toList(),
           documentIds: _selectedDocumentIds.toList(),
@@ -281,7 +299,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _retryLastQuestion() async {
-    await ref.read(chatControllerProvider.notifier).retryLast(
+    await ref
+        .read(chatControllerProvider.notifier)
+        .retryLast(
           tags: _selectedTags.toList(),
           documentIds: _selectedDocumentIds.toList(),
           sourceTypes: _selectedSourceTypes.toList(),
@@ -533,8 +553,7 @@ class _ChatScopeBar extends StatelessWidget {
     }
     if (selectedDocumentIds.isNotEmpty) {
       final catalogTitles = {
-        for (final document
-            in documents.value ?? const <KnowledgeDocument>[])
+        for (final document in documents.value ?? const <KnowledgeDocument>[])
           document.id: document.title,
       };
       final titles = selectedDocumentIds
@@ -663,8 +682,9 @@ class _DocumentScopeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return documents.when(
       data: (items) {
-        final indexedItems =
-            items.where((document) => document.isIndexed).toList();
+        final indexedItems = items
+            .where((document) => document.isIndexed)
+            .toList();
         return SizedBox(
           height: 52,
           child: ListView.separated(
@@ -807,10 +827,14 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.onSuggestedQuestion,
+    this.showRegenerate = false,
+    this.onRegenerate,
   });
 
   final ChatMessage message;
   final ValueChanged<String> onSuggestedQuestion;
+  final bool showRegenerate;
+  final VoidCallback? onRegenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -821,133 +845,293 @@ class _MessageBubble extends StatelessWidget {
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: isUser ? colorScheme.primary : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border:
-                isUser ? null : Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: DefaultTextStyle(
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: isUser ? colorScheme.primary : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: isUser
+                    ? null
+                    : Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: DefaultTextStyle(
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: isUser ? colorScheme.onPrimary : null,
                   ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  isUser
-                      ? Text(message.text)
-                      : MarkdownText(data: message.text),
-                  if (message.contentTruncated) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.info_outline, size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            '这条历史消息过长，仅显示前 32000 个字符',
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      isUser
+                          ? Text(message.text)
+                          : MarkdownText(data: message.text),
+                      if (message.interrupted) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.labelMedium?.color,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '已停止生成，内容可能不完整',
+                                style: Theme.of(context).textTheme.labelMedium,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                  if (message.citations.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      '引用来源',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    for (final citation in message.citations)
-                      _CitationTile(citation: citation),
-                  ],
-                  if (message.suggestedQuestions.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final question in message.suggestedQuestions)
-                          ActionChip(
-                            label: Text(question),
-                            onPressed: () => onSuggestedQuestion(question),
-                          ),
+                      if (message.contentTruncated) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '这条历史消息过长，仅显示前 32000 个字符',
+                                style: Theme.of(context).textTheme.labelMedium,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
-                  ],
-                ],
+                      if (message.citations.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          '引用来源',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        for (final citation in message.citations)
+                          _CitationTile(citation: citation),
+                      ],
+                      if (message.suggestedQuestions.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final question in message.suggestedQuestions)
+                              ActionChip(
+                                label: Text(question),
+                                onPressed: () => onSuggestedQuestion(question),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            if (showRegenerate)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: TextButton.icon(
+                  onPressed: onRegenerate,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('重新生成'),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CitationTile extends StatelessWidget {
+class _CitationTile extends ConsumerStatefulWidget {
   const _CitationTile({required this.citation});
 
   final Citation citation;
 
   @override
+  ConsumerState<_CitationTile> createState() => _CitationTileState();
+}
+
+class _CitationTileState extends ConsumerState<_CitationTile> {
+  bool _expanded = false;
+  Future<KnowledgeDocument>? _contextFuture;
+
+  static const _contextPadding = 500;
+  static const _contextLimit = 2200;
+
+  void _toggleContext() {
+    setState(() {
+      _expanded = !_expanded;
+      if (_expanded && _contextFuture == null) {
+        final start = widget.citation.startOffset ?? 0;
+        final windowStart = start > _contextPadding
+            ? start - _contextPadding
+            : 0;
+        _contextFuture = ref
+            .read(documentsApiProvider)
+            .getDocument(
+              widget.citation.documentId,
+              contentOffset: windowStart,
+              contentLimit: _contextLimit,
+            );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push(
-        Uri(
-          path: '/app/documents/${citation.documentId}',
-          queryParameters: {
-            'highlight': citation.text,
-            if (citation.startOffset != null)
-              'highlightStart': citation.startOffset.toString(),
-            if (citation.endOffset != null)
-              'highlightEnd': citation.endOffset.toString(),
-          },
-        ).toString(),
-      ),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border:
-              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+    final citation = widget.citation;
+    final canExpand =
+        citation.startOffset != null && citation.endOffset != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => context.push(
+            Uri(
+              path: '/app/documents/${citation.documentId}',
+              queryParameters: {
+                'highlight': citation.text,
+                if (citation.startOffset != null)
+                  'highlightStart': citation.startOffset.toString(),
+                if (citation.endOffset != null)
+                  'highlightEnd': citation.endOffset.toString(),
+              },
+            ).toString(),
+          ),
           borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    citation.documentTitle,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    citation.metadataLabel,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        citation.documentTitle,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        citation.metadataLabel,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(citation.text),
+                      if (canExpand) ...[
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: _toggleContext,
+                            child: Text(
+                              _expanded ? '收起前后文' : '查看前后文',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(citation.text),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, size: 18),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded) _buildContext(),
+      ],
+    );
+  }
+
+  Widget _buildContext() {
+    return FutureBuilder<KnowledgeDocument>(
+      future: _contextFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '暂时无法加载前后文',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          );
+        }
+        final document = snapshot.data!;
+        final content = document.content ?? '';
+        final start =
+            ((widget.citation.startOffset ?? 0) - document.contentOffset)
+                .clamp(0, content.length)
+                .toInt();
+        final end = ((widget.citation.endOffset ?? 0) - document.contentOffset)
+            .clamp(start, content.length)
+            .toInt();
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: SelectableText.rich(
+              TextSpan(
+                children: [
+                  if (start > 0) TextSpan(text: content.substring(0, start)),
+                  TextSpan(
+                    text: content.substring(start, end),
+                    style: TextStyle(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (end < content.length)
+                    TextSpan(text: content.substring(end)),
                 ],
               ),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 18),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

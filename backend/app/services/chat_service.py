@@ -65,6 +65,8 @@ class PreparedConversation:
     scope: ChatScope
     history: list[tuple[str, str]]
     is_new: bool
+    regenerate: bool = False
+    removed_message_ids: tuple[UUID, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -556,12 +558,22 @@ def _prepare_conversation(
         if conversation is None:
             raise ConversationNotFoundError("会话不存在或已被删除")
         scope = _effective_scope(conversation, payload)
+        history = _conversation_history(db, conversation.id)
+        removed_message_ids: tuple[UUID, ...] = ()
+        if payload.regenerate:
+            removed_message_ids = _trailing_turn_message_ids(
+                db, conversation.id
+            )
+            if removed_message_ids:
+                history = history[: len(history) - len(removed_message_ids)]
         return PreparedConversation(
             id=conversation.id,
             title=conversation.title,
             scope=scope,
-            history=_conversation_history(db, conversation.id),
+            history=history,
             is_new=False,
+            regenerate=payload.regenerate,
+            removed_message_ids=removed_message_ids,
         )
 
     return PreparedConversation(
@@ -618,16 +630,26 @@ def _persist_conversation_turn(
                 updated_at=datetime.now(UTC),
             )
         )
-    db.add(
-        Message(
-            conversation_id=prepared.id,
-            user_id=user_id,
-            role=MessageRole.USER.value,
-            content=question.strip(),
-            citations=[],
-            metadata_={},
+    if prepared.regenerate:
+        # 重新生成：删除被替换的旧一轮消息，user 消息原样保留在库中。
+        if prepared.removed_message_ids:
+            db.execute(
+                delete(Message).where(
+                    Message.conversation_id == prepared.id,
+                    Message.id.in_(prepared.removed_message_ids),
+                )
+            )
+    else:
+        db.add(
+            Message(
+                conversation_id=prepared.id,
+                user_id=user_id,
+                role=MessageRole.USER.value,
+                content=question.strip(),
+                citations=[],
+                metadata_={},
+            )
         )
-    )
     db.add(
         Message(
             conversation_id=prepared.id,
@@ -639,6 +661,28 @@ def _persist_conversation_turn(
         )
     )
     db.commit()
+
+
+def _trailing_turn_message_ids(db: Session, conversation_id: UUID) -> tuple[UUID, ...]:
+    """收集会话末尾最近一轮消息（assistant 们 + 其后那条 user）的 ID。"""
+    trailing = list(
+        db.execute(
+            select(Message.id, Message.role)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc(), Message.id.desc())
+            .limit(4)
+        )
+    )
+    removed: list[UUID] = []
+    for message_id, role in trailing:
+        if role == MessageRole.USER.value:
+            removed.append(message_id)
+            break
+        if role == MessageRole.ASSISTANT.value:
+            removed.append(message_id)
+            continue
+        break
+    return tuple(removed)
 
 
 def _title_from_question(question: str) -> str:

@@ -253,11 +253,13 @@ class ChatMessage {
     this.citations = const [],
     this.suggestedQuestions = const [],
     this.contentTruncated = false,
+    this.interrupted = false,
   });
 
   final ChatMessageRole role;
   final String text;
   final bool contentTruncated;
+  final bool interrupted;
   final List<Citation> citations;
   final List<String> suggestedQuestions;
 }

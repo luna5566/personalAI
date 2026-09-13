@@ -1,5 +1,6 @@
 import logging
 from typing import Annotated
+from urllib.parse import quote as url_quote
 from uuid import UUID
 
 from fastapi import (
@@ -11,6 +12,7 @@ from fastapi import (
     HTTPException,
     Query,
     Request,
+    Response,
     UploadFile,
     status,
 )
@@ -264,6 +266,33 @@ def related_documents(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except document_service.RelatedDocumentUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.get("/{document_id}/export.md")
+def export_document_markdown(
+    document_id: UUID,
+    db: Annotated[Session, Depends(db_session)],
+    user_id: Annotated[UUID, Depends(authenticated_user_id)],
+) -> Response:
+    result = document_service.export_document_markdown(
+        db,
+        user_id,
+        document_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="资料不存在")
+    filename, markdown = result
+    return Response(
+        content=markdown,
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                "attachment; filename=\"document.md\"; "
+                f"filename*=UTF-8''{url_quote(filename)}"
+            ),
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("/{document_id}", response_model=DocumentRead)

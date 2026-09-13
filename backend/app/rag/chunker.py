@@ -3,6 +3,13 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 _PAGE_MARKER_RE = re.compile(r"^\[第\s*(\d+)\s*页\]\s*")
+_NUMBERED_HEADING_RE = re.compile(
+    r"^(第\s*[一二三四五六七八九十百千0-9]+\s*[章节篇回部分]"
+    r"|[一二三四五六七八九十]+\s*[、.．]"
+    r"|（\s*[一二三四五六七八九十0-9]+\s*）"
+    r"|\(\s*[一二三四五六七八九十0-9]+\s*\)"
+    r"|[0-9]+\s*[、.．])\s*"
+)
 
 
 @dataclass(frozen=True)
@@ -111,7 +118,14 @@ def iter_text_chunks(
             continue
 
         next_length = _joined_length(current_parts, paragraph)
-        if current_parts and next_length > chunk_size and _joined_length(current_parts) >= min_chunk_size:
+        if (
+            current_parts
+            and next_length > chunk_size
+            and (
+                _joined_length(current_parts) >= min_chunk_size
+                or next_length > max_chunk_size
+            )
+        ):
             completed = _build_chunk(
                 next_index,
                 current_parts,
@@ -251,6 +265,15 @@ def _section_title(paragraph: str) -> str | None:
     first_line = paragraph.splitlines()[0].strip()
     if first_line.startswith("#"):
         return first_line.lstrip("#").strip()[:255] or None
+    match = _NUMBERED_HEADING_RE.match(first_line)
+    if match is not None:
+        remainder = first_line[match.end() :].strip()
+        # 句子式内容（如“1. 苹果是水果。”）是列表项，不是标题
+        if remainder and len(remainder) <= 60 and not remainder.endswith(
+            ("。", "！", "？", ";", "；")
+        ):
+            return remainder[:255] or None
+        return None
     if len(first_line) <= 40 and not first_line.endswith(("。", "！", "？", ".", "!", "?")):
         return first_line
     return None

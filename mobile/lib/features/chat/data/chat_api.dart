@@ -18,12 +18,14 @@ class ChatApi {
     List<String> documentIds = const [],
     List<String> sourceTypes = const [],
     int? recentDays,
+    bool regenerate = false,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/chat/query',
       data: {
         'question': question,
         'conversation_id': ?conversationId,
+        if (regenerate) 'regenerate': true,
         'scope': {
           'document_ids': documentIds,
           'tags': tags,
@@ -45,6 +47,8 @@ class ChatApi {
     List<String> documentIds = const [],
     List<String> sourceTypes = const [],
     int? recentDays,
+    bool regenerate = false,
+    CancelToken? cancelToken,
   }) async* {
     try {
       final response = await _dio.post<ResponseBody>(
@@ -52,6 +56,7 @@ class ChatApi {
         data: {
           'question': question,
           'conversation_id': ?conversationId,
+          if (regenerate) 'regenerate': true,
           'scope': {
             'document_ids': documentIds,
             'tags': tags,
@@ -63,6 +68,7 @@ class ChatApi {
           responseType: ResponseType.stream,
           receiveTimeout: const Duration(minutes: 3),
         ),
+        cancelToken: cancelToken,
       );
       final body = response.data;
       if (body == null) {
@@ -79,6 +85,7 @@ class ChatApi {
           documentIds: documentIds,
           sourceTypes: sourceTypes,
           recentDays: recentDays,
+          regenerate: regenerate,
         );
         yield ChatStreamEvent.done(
           conversationId: fallback.conversationId,

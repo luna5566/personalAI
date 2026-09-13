@@ -9,6 +9,7 @@ from pydantic import (
     Field,
     ValidationError,
     field_validator,
+    model_validator,
 )
 
 from app.core.request_limits import (
@@ -53,8 +54,15 @@ class ChatQueryRequest(BaseModel):
     conversation_id: UUID | None = None
     question: str = Field(min_length=1, max_length=4000)
     scope: ChatScope | None = None
+    regenerate: bool = False
 
     model_config = ConfigDict(str_strip_whitespace=True)
+
+    @model_validator(mode="after")
+    def _validate_regenerate(self) -> "ChatQueryRequest":
+        if self.regenerate and self.conversation_id is None:
+            raise ValueError("重新生成需要提供已有会话 ID")
+        return self
 
 
 class Citation(BaseModel):
