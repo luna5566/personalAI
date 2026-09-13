@@ -37,14 +37,27 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: python -m ruff check app tests scripts
+      - name: Compile check
+        run: python -m compileall -q app
       - name: Copy env example
         run: cp .env.example .env
       - name: Run migrations
         run: alembic upgrade head
       - name: Check migrations up to date
         run: alembic check
+      - name: Seed retrieval eval corpus
+        run: |
+          python scripts/ensure_default_user.py
+          python scripts/seed_eval_documents.py
+      - name: Retrieval quality gate
+        run: |
+          python scripts/eval_retrieval.py \
+            --eval-set scripts/retrieval_eval_set.ci.jsonl \
+            --min-recall 0.8
       - name: Run tests
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=85
 
   mobile:
     name: Flutter analyze & test
@@ -57,6 +70,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.44.0
           cache: true
       - name: Install dependencies
         run: flutter pub get
@@ -64,3 +78,5 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test
+      - name: Build web
+        run: flutter build web --release
