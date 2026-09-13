@@ -1,12 +1,15 @@
 services:
   db:
     image: pgvector/pgvector:pg16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: personal_ai
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      # 只绑定回环地址，避免部署到服务器时数据库对公网暴露；
+      # 如需局域网访问改成 "5432:5432" 或指定网卡 IP。
+      - "127.0.0.1:5432:5432"
     volumes:
       - personal_ai_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +21,10 @@ services:
   api:
     build:
       context: ./backend
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      # /metrics 与 /docs 随 API 一起暴露，默认仅本机可访问。
+      - "127.0.0.1:8000:8000"
     environment:
       APP_ENV: local
       API_PREFIX: /api
@@ -57,11 +62,15 @@ services:
   web:
     build:
       context: ./mobile
-      args:
-        # 浏览器直接访问 API，因此用宿主机地址而不是服务名。
-        API_BASE_URL: http://127.0.0.1:8000/api
+    restart: unless-stopped
+    # API_BASE_URL 通过运行时环境变量注入（写入容器内的 env.js），
+    # 修改地址只需改这里并 `docker compose up -d web`，无需重建镜像。
+    environment:
+      API_BASE_URL: http://127.0.0.1:8000/api
     ports:
-      - "5600:80"
+      # Web 是唯一需要被浏览器访问的入口；本机使用保持回环绑定，
+      # 局域网/公网使用时改成 "5600:80" 并自行前置 TLS 反向代理。
+      - "127.0.0.1:5600:80"
     depends_on:
       api:
         condition: service_healthy

@@ -1,8 +1,8 @@
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -11,7 +11,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --upgrade pip \
+# BuildKit 缓存挂载：依赖层重建时 pip 下载走本地缓存，不重复拉取，
+# 缓存不进入镜像层，不影响镜像体积。
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip \
     && pip install -r requirements.txt
 
 COPY alembic.ini .
