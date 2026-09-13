@@ -1214,3 +1214,43 @@ Conversation 新增非持久化 `scope_preview`。详情语句只加载 `id/titl
 认证依赖现在执行一条标量行查询：从 `auth_sessions` 只选择 `expires_at`，按 token 的 session ID 与 user ID 同时过滤，并 JOIN users 证明关联用户仍存在。查询不选择 session 的 client name/created_at，也不选择 User 的邮箱、密码、姓名、头像或时间字段；结果是普通 Row，不创建任何 ORM。JWT 签名、issuer、audience、token type、subject、session ID 和时钟偏移仍先由既有解码器验证，数据库过期时间继续使用当前 UTC 时间判断。
 
 测试覆盖缺失/非法/过期 token、缺失 session、跨用户 session、缺失用户和有效访问原语义，并编译 SQL 要求只有 `auth_sessions.expires_at` 与 users JOIN、禁止全部用户公开/私有列及非必要 session 列。真实 PostgreSQL 为头像 2,000,000 字符的临时用户创建有效会话，在同一 Session 连续执行 100 次真实 token 验证：每次均返回精确 user/session ID，identity map 始终为 0，tracemalloc 峰值 184,507 字节，数据库头像长度保持 2,000,000。探针会话与用户按精确 UUID 清理且连接池 checked-out 为 0。完整后端 571 项、Flutter 139 项、analyze、compileall 和 Alembic check 通过；数据库结构仍为 `0028_storage_audit_lookup`。
+
+## 决策 137：部署假设为单实例，横向扩展前需要先拆队列
+
+任务队列、登录/注册限流和 AI 用户限流都基于共享 PostgreSQL 表；worker、恢复 supervisor 和删除 outbox worker 跑在 API 进程内，进程内并发上限与租约都按单实例设计。个人部署这是最简可靠的形态。若要跑多实例，恢复锁、限流额度和心跳语义需要先迁移到独立队列或显式租约设计，不能直接复制 compose 文件了事。
+
+## 决策 138：继续使用同步 SQLAlchemy，不迁移 asyncpg
+
+业务依赖 FastAPI 线程池执行同步数据库调用，配合默认 statement timeout 与连接池上限已满足个人规模；Provider 调用与数据库事务已按决策 98/99 分离。迁移到 AsyncSession/asyncpg 收益主要在更高并发下的调度开销，代价是全部 service 层重写，当前不做。
+
+## 决策 139：Web 前端的 API 地址运行时注入
+
+Flutter Web 产物在容器启动时由 nginx entrypoint 脚本把 `API_BASE_URL` 写入 `env.js`，应用启动时优先读取 `window.__APP_CONFIG__`，其次编译期 `--dart-define`，最后本地默认值。同一镜像可部署到不同 API 地址，避免仅为改配置而重建镜像。
+
+## 决策 140：Flutter 工具链三端对齐在 3.41.9，Riverpod 暂留 2.x
+
+本地开发、CI（subosito/flutter-action `flutter-version: 3.41.9`）和 Web 镜像（`ghcr.io/cirruslabs/flutter:3.41.9`）使用同一 Flutter 版本，避免 lockfile 在不同 Dart 版本下解析出不同依赖。锁定包 go_router 17 与 file_picker 12 要求 Dart >= 3.10，是镜像从 3.35.0 升级的直接原因；cirruslabs 镜像自 2026-05 起停止更新，后续升级需自建或更换基础镜像。
+
+`flutter_riverpod` 3.4 要求 Dart >= 3.12（当前 3.41.9 为 Dart 3.11.5），且从 2.x 迁移需要把 5 个 StateNotifier 控制器改写为 Notifier API。等 Flutter 工具链升级到 Dart 3.12+ 后一并迁移；2.6.1 在当前版本下继续受支持，代码中没有使用 3.x 已移除的 API。
+
+## 决策 141：服务端口默认只绑定回环地址
+
+`docker-compose.yml` 的 db/api/web 端口默认写成 `127.0.0.1:5432:5432` 等回环绑定，部署到服务器时数据库、API（含 `/metrics`、`/docs`）不对公网暴露；需要局域网访问 Web 时显式改回 `"5600:80"` 并自行前置 TLS 反向代理。个人部署最容易忽略的暴露面由默认配置收掉。
+
+## 决策 142：检索质量评测纳入 CI 门禁，任务队列深度进入指标
+
+`scripts/seed_eval_documents.py` 幂等播种 15 篇固定语料，`retrieval_eval_set.ci.jsonl` 以语料中唯一主题词作为 expected_keywords，CI 在迁移检查后执行 `eval_retrieval.py --min-recall 0.8`。评测依赖关键词检索分支的确定性：命中候选的基分 0.55 高于最低相关度阈值 0.35，且远高于 local_hash 向量噪声分，因此门禁稳定、不依赖外部模型。改变切片策略、检索 SQL 或重排逻辑前，先本地跑同一评测集。
+
+任务队列深度（`job_queue_depth` gauge，按状态打标）由恢复调度器在每次扫描周期顺带采集，单条 `GROUP BY status` 聚合带 statement timeout，采集失败只记日志不影响恢复；`/metrics` 本身保持无数据库依赖。
+
+## 决策 143：Flutter 工具链升级到 3.44.0（Dart 3.12），Riverpod 3 迁移完成
+
+三端（本地 / CI / Web 镜像）统一到 Flutter 3.44.0；cirruslabs 镜像 3.44.0 是其停更前的可用版本，后续升级需自建镜像。pubspec SDK 下限收紧到 3.12.0，防止旧工具链解析出不兼容组合。依赖升级：flutter_riverpod 2.6.1→3.4.3、go_router 17.5→18.0.1。
+
+Riverpod 3 迁移要点，后续写代码必须遵守：5 个 StateNotifier 控制器改写为 Notifier（初始状态放 `build()`，依赖用 `ref`，`mounted` 用 `ref.onDispose` 置位的标志替代）；2 个 StateProvider 改为带方法的 NotifierProvider。三个行为变化曾造成测试回归，均已修正并锁定：
+
+1. `valueOrNull` 移除，统一改用 `value`；
+2. build 期间同步写 state 会被吞掉——AuthController 启动加载改为 `Future.microtask(loadCurrentUser)`；
+3. 没有活跃监听者的 provider 不处理异步状态更新（autoDispose 默认化的连带语义），测试必须像真实 UI 一样 `container.listen` 订阅被断言的控制器；Riverpod 3 的自动重试会留下 pending timer，涉及失败 future 的测试显式 `retry: (_, __) => null`。
+
+go_router 18 暴露了认证深链回归：启动期间 `/register`、`/login` 深链经 /loading 中转会丢失入口参数，现改为初始化期间直接停留在认证页（router redirect 锁定）。
