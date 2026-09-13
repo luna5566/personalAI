@@ -180,7 +180,6 @@ void main() {
 }
 
 class DelayedAuthenticatedController extends AuthController {
-  DelayedAuthenticatedController(super.ref);
 
   @override
   Future<void> loadCurrentUser() async {
@@ -192,7 +191,6 @@ class DelayedAuthenticatedController extends AuthController {
 }
 
 class RecoverableAuthenticatedController extends AuthController {
-  RecoverableAuthenticatedController(super.ref);
 
   int loadCount = 0;
 
@@ -215,7 +213,6 @@ class RecoverableAuthenticatedController extends AuthController {
 }
 
 class InteractiveFailingLoginController extends AuthController {
-  InteractiveFailingLoginController(super.ref);
 
   @override
   Future<void> loadCurrentUser() async {
@@ -231,7 +228,6 @@ class InteractiveFailingLoginController extends AuthController {
 }
 
 class InteractiveFailingRegistrationController extends AuthController {
-  InteractiveFailingRegistrationController(super.ref);
 
   @override
   Future<void> loadCurrentUser() async {

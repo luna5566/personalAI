@@ -65,7 +65,7 @@ class _TagManagementPageState extends ConsumerState<TagManagementPage> {
                       tag: value.items[index],
                       onMutated: _reload,
                     ),
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemCount: value.items.length,
                   ),
                 );

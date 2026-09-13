@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/markdown_text.dart';
 import '../../documents/models/document.dart';
 import '../../documents/providers/documents_provider.dart';
 import '../../documents/widgets/document_picker_dialog.dart';
@@ -129,7 +130,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         onSuggestedQuestion: _askSuggestedQuestion,
                       );
                     },
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemCount: chat.messages.length + (chat.loading ? 1 : 0),
                   ),
           ),
@@ -533,7 +534,7 @@ class _ChatScopeBar extends StatelessWidget {
     if (selectedDocumentIds.isNotEmpty) {
       final catalogTitles = {
         for (final document
-            in documents.valueOrNull ?? const <KnowledgeDocument>[])
+            in documents.value ?? const <KnowledgeDocument>[])
           document.id: document.title,
       };
       final titles = selectedDocumentIds
@@ -597,7 +598,7 @@ class _RecentDaysScopeRow extends StatelessWidget {
             onSelected: (_) => onChanged(option.value),
           );
         },
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemCount: _options.length,
       ),
     );
@@ -638,7 +639,7 @@ class _SourceTypeScopeRow extends StatelessWidget {
             onSelected: (_) => onChanged(option.value),
           );
         },
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemCount: _options.length,
       ),
     );
@@ -685,12 +686,12 @@ class _DocumentScopeRow extends StatelessWidget {
                 onSelected: (_) => onChanged(document),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemCount: indexedItems.length + 1,
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       loading: () => const _ScopeLoadingRow(),
     );
   }
@@ -733,12 +734,12 @@ class _TagScopeRow extends StatelessWidget {
                 onSelected: (_) => onChanged(tag.name),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemCount: items.length + 1,
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       loading: () => const _ScopeLoadingRow(),
     );
   }
@@ -836,7 +837,9 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(message.text),
+                  isUser
+                      ? Text(message.text)
+                      : MarkdownText(data: message.text),
                   if (message.contentTruncated) ...[
                     const SizedBox(height: 8),
                     Row(

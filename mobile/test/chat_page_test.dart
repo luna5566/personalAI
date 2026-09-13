@@ -233,7 +233,6 @@ void main() {
 }
 
 class FakeChatController extends ChatController {
-  FakeChatController(super.ref);
 
   static String? lastQuestion;
   static List<String> lastDocumentIds = const [];
@@ -264,7 +263,6 @@ class FakeChatController extends ChatController {
 }
 
 class CitationChatController extends ChatController {
-  CitationChatController(super.ref);
 
   @override
   Future<void> ask(
@@ -299,15 +297,14 @@ class CitationChatController extends ChatController {
 }
 
 class HiddenHistoryChatController extends ChatController {
-  HiddenHistoryChatController(super.ref) {
-    state = const ChatState(
-      conversationId: 'conversation-id',
-      messages: [
-        ChatMessage(role: ChatMessageRole.assistant, text: '最近回答'),
-      ],
-      olderMessagesHidden: true,
-    );
-  }
+  @override
+  ChatState build() => const ChatState(
+        conversationId: 'conversation-id',
+        messages: [
+          ChatMessage(role: ChatMessageRole.assistant, text: '最近回答'),
+        ],
+        olderMessagesHidden: true,
+      );
 }
 
 class FakeSpeechInputService extends SpeechInputService {

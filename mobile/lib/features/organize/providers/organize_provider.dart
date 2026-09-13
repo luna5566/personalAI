@@ -7,14 +7,13 @@ final organizeApiProvider =
     Provider<OrganizeApi>((ref) => OrganizeApi(ref.watch(dioProvider)));
 
 final organizeControllerProvider =
-    StateNotifierProvider<OrganizeController, AsyncValue<OrganizeResult?>>(
-  (ref) => OrganizeController(ref),
+    NotifierProvider<OrganizeController, AsyncValue<OrganizeResult?>>(
+  OrganizeController.new,
 );
 
-class OrganizeController extends StateNotifier<AsyncValue<OrganizeResult?>> {
-  OrganizeController(this._ref) : super(const AsyncData(null));
-
-  final Ref _ref;
+class OrganizeController extends Notifier<AsyncValue<OrganizeResult?>> {
+  @override
+  AsyncValue<OrganizeResult?> build() => const AsyncData(null);
 
   Future<void> organizeCollection({
     required String mode,
@@ -24,7 +23,7 @@ class OrganizeController extends StateNotifier<AsyncValue<OrganizeResult?>> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => _ref.read(organizeApiProvider).organizeCollection(
+      () => ref.read(organizeApiProvider).organizeCollection(
             mode: mode,
             tag: tag,
             documentIds: documentIds,

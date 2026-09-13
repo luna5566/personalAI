@@ -23,12 +23,12 @@ class ChatApi {
       '/chat/query',
       data: {
         'question': question,
-        if (conversationId != null) 'conversation_id': conversationId,
+        'conversation_id': ?conversationId,
         'scope': {
           'document_ids': documentIds,
           'tags': tags,
           'source_types': sourceTypes,
-          if (recentDays != null) 'recent_days': recentDays,
+          'recent_days': ?recentDays,
         },
       },
     );
@@ -51,12 +51,12 @@ class ChatApi {
         '/chat/query/stream',
         data: {
           'question': question,
-          if (conversationId != null) 'conversation_id': conversationId,
+          'conversation_id': ?conversationId,
           'scope': {
             'document_ids': documentIds,
             'tags': tags,
             'source_types': sourceTypes,
-            if (recentDays != null) 'recent_days': recentDays,
+            'recent_days': ?recentDays,
           },
         },
         options: Options(
@@ -203,7 +203,7 @@ class ChatApi {
       '/chat/conversations/$conversationId/messages/recent',
       queryParameters: {
         'page_size': messageHistoryPageSize,
-        if (cursor != null) 'cursor': cursor,
+        'cursor': ?cursor,
       },
     );
     return MessageHistoryPage.fromJson(response.data!);

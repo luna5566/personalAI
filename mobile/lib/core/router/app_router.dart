@@ -42,12 +42,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         state.uri.queryParameters['redirect'],
       );
       if (initializing) {
-        return inLoading
-            ? null
-            : _locationWithRedirect(
-                '/loading',
-                redirectTarget ?? state.uri.toString(),
-              );
+        // 登录/注册深链在启动期间留在原地，避免中转 /loading 时丢失入口。
+        if (inLoading || inAuthFlow) {
+          return null;
+        }
+        return _locationWithRedirect(
+          '/loading',
+          redirectTarget ?? state.uri.toString(),
+        );
       }
       if (authState.startupFailed && !loggedIn) {
         return inStartupError
@@ -63,6 +65,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (inLoading) {
         if (loggedIn) {
           return redirectTarget ?? '/app/home';
+        }
+        // 深链直达 /register 或 /login 时保持原入口，不要折回登录页。
+        final authEntry = _authFlowRedirectTarget(
+          state.uri.queryParameters['redirect'],
+        );
+        if (authEntry != null) {
+          return authEntry;
         }
         return _locationWithRedirect('/login', redirectTarget);
       }
@@ -175,7 +184,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-  ref.listen<AuthState>(authControllerProvider, (_, __) => router.refresh());
+  ref.listen<AuthState>(authControllerProvider, (_, _) => router.refresh());
   ref.onDispose(router.dispose);
   return router;
 });
@@ -200,6 +209,13 @@ String? _validatedRedirectTarget(String? value) {
     return null;
   }
   return uri.path.startsWith('/app/') ? uri.toString() : null;
+}
+
+String? _authFlowRedirectTarget(String? value) {
+  if (value == '/login' || value == '/register') {
+    return value;
+  }
+  return null;
 }
 
 List<String> _documentIdsFromQuery(Uri uri) {

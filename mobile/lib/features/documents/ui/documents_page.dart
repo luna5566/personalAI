@@ -57,7 +57,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
     final documents = ref.watch(documentsPageProvider(_pageQuery));
     final tags = ref.watch(tagsProvider);
     final visibleItems =
-        documents.valueOrNull?.items ?? const <KnowledgeDocument>[];
+        documents.value?.items ?? const <KnowledgeDocument>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -235,7 +235,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                   onLongPress: () => _toggleDocumentSelection(document.id),
                 );
               },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemCount: items.isEmpty ? 2 : items.length + 2,
             ),
           );
@@ -264,7 +264,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
     final selection = await showTagPickerDialog(
       context,
       selectedNames: {
-        if (_selectedTag != null) _selectedTag!,
+        ?_selectedTag,
       },
       maxSelection: 1,
     );
@@ -341,7 +341,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
       isScrollControlled: true,
       builder: (context) => _BulkTagEditSheet(
         documents: selectedDocuments,
-        tags: ref.read(tagsProvider).valueOrNull ?? const [],
+        tags: ref.read(tagsProvider).value ?? const [],
       ),
     );
     if (result == null) {
@@ -429,7 +429,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
 
     final ids = _selectedDocumentIds.toList();
     final visibleCount =
-        ref.read(documentsPageProvider(_pageQuery)).valueOrNull?.items.length ??
+        ref.read(documentsPageProvider(_pageQuery)).value?.items.length ??
             0;
     setState(() => _bulkBusy = true);
     try {
@@ -642,7 +642,7 @@ class _SourceTypeFilterBar extends StatelessWidget {
             onSelected: (_) => onSelected(option.value),
           );
         },
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemCount: _options.length,
       ),
     );
@@ -887,12 +887,12 @@ class _TagFilterBar extends StatelessWidget {
                 onSelected: (_) => onSelected(tag.name),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemCount: items.length + 2,
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       loading: () => const SizedBox(
         height: 44,
         child: Align(

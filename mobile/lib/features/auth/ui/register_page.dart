@@ -37,7 +37,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         appBar: AppBar(title: const Text('注册')),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => Scaffold(
+      error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('注册')),
         body: Center(
           child: Padding(

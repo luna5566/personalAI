@@ -91,7 +91,7 @@ class _ConversationHistoryPageState
                   onDelete: () => _deleteConversation(conversation),
                 );
               },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemCount: items.isEmpty ? 2 : items.length + 2,
             ),
           );
@@ -216,7 +216,7 @@ class _ConversationHistoryPageState
     final shouldMoveToPreviousPage = _page > 1 &&
         ref
                 .read(filteredConversationPageProvider(_pageQuery))
-                .valueOrNull
+                .value
                 ?.items
                 .length ==
             1;

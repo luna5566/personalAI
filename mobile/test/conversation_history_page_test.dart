@@ -499,7 +499,6 @@ void main() {
 }
 
 class FakeChatController extends ChatController {
-  FakeChatController(super.ref);
 }
 
 class FakeChatApi extends ChatApi {

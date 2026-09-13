@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/user_error_message.dart';
 import '../../../core/widgets/async_state_view.dart';
+import '../../../core/widgets/markdown_text.dart';
 import '../data/chat_api.dart';
 import '../models/chat.dart';
 import '../providers/chat_provider.dart';
@@ -34,7 +35,7 @@ class _ConversationDetailPageState
         ref.watch(conversationMessagesProvider(widget.conversationId));
     final conversation =
         ref.watch(conversationDetailProvider(widget.conversationId));
-    final sourcePage = messages.valueOrNull;
+    final sourcePage = messages.value;
     if (sourcePage != null && !identical(sourcePage, _sourcePage)) {
       _replaceWithRecentPage(sourcePage);
     }
@@ -45,10 +46,10 @@ class _ConversationDetailPageState
         actions: [
           IconButton(
             onPressed: _items.isNotEmpty &&
-                    conversation.valueOrNull != null &&
+                    conversation.value != null &&
                     !_continuing
                 ? () => _continueChat(
-                      conversation.valueOrNull!,
+                      conversation.value!,
                     )
                 : null,
             icon: _continuing
@@ -91,7 +92,7 @@ class _ConversationDetailPageState
                   message: _items[messageIndex].toChatMessage(),
                 );
               },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemCount: leadingItems + _items.length,
             ),
           );
@@ -305,7 +306,9 @@ class _HistoryMessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(message.text),
+                  isUser
+                      ? Text(message.text)
+                      : MarkdownText(data: message.text),
                   if (message.contentTruncated) ...[
                     const SizedBox(height: 8),
                     Row(

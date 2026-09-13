@@ -1,16 +1,20 @@
 # syntax=docker/dockerfile:1
-# 构建参数 API_BASE_URL 必须在构建期注入，例如：
-#   docker build --build-arg API_BASE_URL=http://127.0.0.1:8000/api -t personal-ai-web .
-FROM ghcr.io/cirruslabs/flutter:3.35.0 AS build
+# Web 静态产物镜像。API_BASE_URL 在运行期由环境变量注入（写入 env.js），
+# 无需为不同 API 地址重建镜像；也可以用 --build-arg 在构建期固定：
+#   docker build -t personal-ai-web .
+#   docker run -e API_BASE_URL=https://api.example.com/api -p 5600:80 personal-ai-web
+# 与本地 Flutter 版本保持一致（Dart 3.12）；Riverpod 3 要求 Dart >= 3.12。
+# cirruslabs 镜像自 2026-05 起停止更新，3.44.0 为其最终版本之一，
+# 后续升级需自建镜像或更换基础镜像（见 docs/project-decisions.md 决策 143）。
+FROM ghcr.io/cirruslabs/flutter:3.44.0 AS build
 
-ARG API_BASE_URL=http://127.0.0.1:8000/api
 WORKDIR /src
 
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
 COPY . .
-RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+RUN flutter build web --release
 
 FROM nginx:1.27-alpine
 
@@ -37,5 +41,7 @@ RUN printf 'server {\n\
 }\n' > /etc/nginx/conf.d/default.conf
 
 COPY --from=build /src/build/web /usr/share/nginx/html
+COPY docker/90-inject-env-config.sh /docker-entrypoint.d/90-inject-env-config.sh
+RUN chmod +x /docker-entrypoint.d/90-inject-env-config.sh
 
 EXPOSE 80

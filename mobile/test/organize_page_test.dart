@@ -119,7 +119,6 @@ void main() {
 }
 
 class FakeOrganizeController extends OrganizeController {
-  FakeOrganizeController(super.ref);
 
   static List<String> lastDocumentIds = const [];
 

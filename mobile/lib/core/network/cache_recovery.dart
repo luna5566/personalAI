@@ -19,47 +19,57 @@ final cacheRecoveryClientProvider = Provider<Dio>((ref) {
 });
 
 final cacheRecoveryControllerProvider =
-    StateNotifierProvider<CacheRecoveryController, bool>((ref) {
-  final tracker = ref.read(cacheRevalidationTrackerProvider.notifier);
-  final controller = CacheRecoveryController(
-    ref.watch(cacheRecoveryClientProvider),
-    tracker.start,
-    onRevalidationTimeout: tracker.cancel,
-  );
-  ref.listen<CacheRevalidationState>(cacheRevalidationTrackerProvider,
-      (previous, next) {
-    if ((previous?.inProgress ?? false) && !next.inProgress) {
-      controller.completeRevalidation();
-    }
-  });
-  ref.listen<CacheFallbackNotice?>(cacheFallbackNoticeProvider, (_, notice) {
-    if (notice == null) {
-      tracker.cancel();
-      controller.completeRevalidation();
-    }
-  });
-  return controller;
-});
+    NotifierProvider<CacheRecoveryController, bool>(
+  CacheRecoveryController.new,
+);
 
-class CacheRecoveryController extends StateNotifier<bool> {
-  CacheRecoveryController(
-    this._dio,
-    this._onReady, {
+class CacheRecoveryController extends Notifier<bool> {
+  CacheRecoveryController({
+    Dio? dio,
+    void Function()? onReady,
     void Function()? onRevalidationTimeout,
-    Duration revalidationTimeout = const Duration(seconds: 10),
-  })  : _onRevalidationTimeout = onRevalidationTimeout,
-        _revalidationTimeout = revalidationTimeout,
-        super(false);
+    this._revalidationTimeout = const Duration(seconds: 10),
+  })  : _ctorDio = dio,
+        _ctorOnReady = onReady,
+        _ctorOnRevalidationTimeout = onRevalidationTimeout;
 
-  final Dio _dio;
-  final void Function() _onReady;
-  final void Function()? _onRevalidationTimeout;
+  // 直连构造（测试）时注入依赖；挂在 provider 上时从 ref 解析。
+  final Dio? _ctorDio;
+  final void Function()? _ctorOnReady;
+  final void Function()? _ctorOnRevalidationTimeout;
   final Duration _revalidationTimeout;
+  late Dio _dio;
+  late void Function() _onReady;
+  late void Function()? _onRevalidationTimeout;
   Completer<void>? _activeRecovery;
   Timer? _revalidationTimer;
+  bool _disposed = false;
+
+  @override
+  bool build() {
+    _dio = _ctorDio ?? ref.watch(cacheRecoveryClientProvider);
+    _onReady =
+        _ctorOnReady ?? () => ref.read(cacheRevalidationTrackerProvider.notifier).start();
+    _onRevalidationTimeout = _ctorOnRevalidationTimeout ??
+        () => ref.read(cacheRevalidationTrackerProvider.notifier).cancel();
+    ref.listen<CacheRevalidationState>(cacheRevalidationTrackerProvider,
+        (previous, next) {
+      if ((previous?.inProgress ?? false) && !next.inProgress) {
+        completeRevalidation();
+      }
+    });
+    ref.listen<CacheFallbackNotice?>(cacheFallbackNoticeProvider, (_, notice) {
+      if (notice == null) {
+        ref.read(cacheRevalidationTrackerProvider.notifier).cancel();
+        completeRevalidation();
+      }
+    });
+    ref.onDispose(_cleanup);
+    return false;
+  }
 
   Future<void> retry() {
-    if (!mounted) {
+    if (_disposed) {
       return Future<void>.value();
     }
     final activeRecovery = _activeRecovery;
@@ -88,7 +98,7 @@ class CacheRecoveryController extends StateNotifier<bool> {
       ready = response.statusCode == 200 &&
           data is Map &&
           data['status'] == 'ready';
-      if (ready && mounted && identical(_activeRecovery, recovery)) {
+      if (ready && !_disposed && identical(_activeRecovery, recovery)) {
         _onReady();
         if (identical(_activeRecovery, recovery)) {
           _revalidationTimer = Timer(
@@ -116,7 +126,7 @@ class CacheRecoveryController extends StateNotifier<bool> {
     _revalidationTimer?.cancel();
     _revalidationTimer = null;
     _activeRecovery = null;
-    if (mounted) {
+    if (!_disposed) {
       state = false;
     }
     if (!recovery.isCompleted) {
@@ -124,14 +134,13 @@ class CacheRecoveryController extends StateNotifier<bool> {
     }
   }
 
-  @override
-  void dispose() {
+  void _cleanup() {
+    _disposed = true;
     _revalidationTimer?.cancel();
     final recovery = _activeRecovery;
     _activeRecovery = null;
     if (recovery != null && !recovery.isCompleted) {
       recovery.complete();
     }
-    super.dispose();
   }
 }

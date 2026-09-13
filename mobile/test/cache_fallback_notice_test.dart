@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -18,9 +17,11 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     final recoveryController = FakeCacheRecoveryController();
     final container = ProviderContainer(
+      // 关闭 Riverpod 3 自动重试，避免测试结束时残留重试定时器
+      retry: (_, _) => null,
       overrides: [
         cacheRecoveryControllerProvider.overrideWith(
-          (ref) => recoveryController,
+          () => recoveryController,
         ),
       ],
     );
@@ -134,7 +135,7 @@ String _dateTime(DateTime value) {
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class FakeCacheRecoveryController extends CacheRecoveryController {
-  FakeCacheRecoveryController() : super(Dio(), () {});
+  FakeCacheRecoveryController();
 
   int retryCount = 0;
   Completer<void>? _pending;

@@ -44,8 +44,8 @@ class Citation {
                 ? '片段 ${chunkIndex! + 1}'
                 : null;
     return [
-      if (sourceLabel != null) sourceLabel,
-      if (locationLabel != null) locationLabel,
+      ?sourceLabel,
+      ?locationLabel,
       '相关度 ${(score.clamp(0, 1) * 100).round()}%',
     ].join(' · ');
   }

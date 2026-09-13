@@ -44,9 +44,7 @@ final conversationDetailProvider =
 );
 
 final chatControllerProvider =
-    StateNotifierProvider<ChatController, ChatState>((ref) {
-  return ChatController(ref);
-});
+    NotifierProvider<ChatController, ChatState>(ChatController.new);
 
 class ChatState {
   const ChatState({
@@ -106,10 +104,9 @@ class ChatState {
   }
 }
 
-class ChatController extends StateNotifier<ChatState> {
-  ChatController(this._ref) : super(const ChatState());
-
-  final Ref _ref;
+class ChatController extends Notifier<ChatState> {
+  @override
+  ChatState build() => const ChatState();
 
   Future<void> ask(
     String question, {
@@ -149,7 +146,7 @@ class ChatController extends StateNotifier<ChatState> {
       var suggestedQuestions = const <String>[];
       var sawDone = false;
 
-      await for (final event in _ref.read(chatApiProvider).queryStream(
+      await for (final event in ref.read(chatApiProvider).queryStream(
             trimmed,
             conversationId: conversationId,
             tags: tags,
@@ -220,9 +217,9 @@ class ChatController extends StateNotifier<ChatState> {
         scopeRecentDays: recentDays,
         messages: completedWindow.messages,
       );
-      _ref.invalidate(conversationHistoryProvider);
-      _ref.invalidate(conversationPageProvider);
-      _ref.invalidate(filteredConversationPageProvider);
+      ref.invalidate(conversationHistoryProvider);
+      ref.invalidate(conversationPageProvider);
+      ref.invalidate(filteredConversationPageProvider);
     } catch (error) {
       state = ChatState(
         conversationId: state.conversationId,

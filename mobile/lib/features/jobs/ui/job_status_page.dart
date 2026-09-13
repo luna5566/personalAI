@@ -33,7 +33,7 @@ class _JobStatusPageState extends ConsumerState<JobStatusPage> {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 2), (_) {
       final value = ref.read(jobProvider(widget.jobId));
-      if (value.valueOrNull?.isFinished == true) {
+      if (value.value?.isFinished == true) {
         _timer?.cancel();
       } else {
         ref.invalidate(jobProvider(widget.jobId));

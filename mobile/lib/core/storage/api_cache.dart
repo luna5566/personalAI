@@ -79,8 +79,7 @@ class ApiCache {
           'cached_at': cachedAt.toIso8601String(),
           'data': data,
           'headers': {
-            if (headers.value('x-total-count') case final total?)
-              'x-total-count': total,
+            'x-total-count': ?headers.value('x-total-count'),
           },
         });
         if (utf8.encode(encoded).length > _maxEntryBytes) {

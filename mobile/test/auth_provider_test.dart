@@ -61,6 +61,9 @@ void main() {
     addTearDown(container.dispose);
 
     container.read(authControllerProvider);
+    // Riverpod 3 中没有活跃监听者的 provider 不会处理异步状态更新，
+    // 真实界面始终监听控制器；这里显式订阅以模拟界面行为。
+    container.listen<AuthState>(authControllerProvider, (_, _) {});
     await _waitForStartup(container);
     expect(container.read(authControllerProvider).user?.email, 'cached@test');
 
@@ -289,8 +292,9 @@ Future<void> _waitForStartup(ProviderContainer container) async {
 }
 
 Future<void> _waitForAuthCalls(RefreshingMeApi api, int count) async {
-  for (var attempt = 0; attempt < 20; attempt += 1) {
-    await Future<void>.delayed(Duration.zero);
+  // Riverpod 3 的监听通知是异步调度的，只用微任务循环可能赶不上状态落盘。
+  for (var attempt = 0; attempt < 200; attempt += 1) {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
     if (api.callCount >= count) {
       return;
     }

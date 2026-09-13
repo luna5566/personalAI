@@ -24,16 +24,7 @@ final authConfigProvider = FutureProvider.autoDispose<AuthConfig>((ref) {
 });
 
 final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthState>((ref) {
-  final controller = AuthController(ref);
-  ref.listen<int>(authSessionInvalidationProvider, (_, __) {
-    controller.expireSession();
-  });
-  ref.listen<int>(cacheRevalidationProvider, (_, __) {
-    controller.refreshCurrentUser();
-  });
-  return controller;
-});
+    NotifierProvider<AuthController, AuthState>(AuthController.new);
 
 class AuthState {
   const AuthState({
@@ -68,17 +59,26 @@ class AuthState {
   }
 }
 
-class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._ref)
-      : super(const AuthState(loading: true, initializing: true)) {
-    loadCurrentUser();
-  }
+class AuthController extends Notifier<AuthState> {
+  bool _disposed = false;
 
-  final Ref _ref;
+  @override
+  AuthState build() {
+    ref.onDispose(() => _disposed = true);
+    ref.listen<int>(authSessionInvalidationProvider, (_, _) {
+      expireSession();
+    });
+    ref.listen<int>(cacheRevalidationProvider, (_, _) {
+      refreshCurrentUser();
+    });
+    // build 期间同步写 state 会被 Riverpod 3 吞掉，推迟到 build 结束后执行。
+    Future.microtask(loadCurrentUser);
+    return const AuthState(loading: true, initializing: true);
+  }
 
   Future<void> loadCurrentUser() async {
     state = const AuthState(loading: true, initializing: true);
-    final tokenStorage = _ref.read(tokenStorageProvider);
+    final tokenStorage = ref.read(tokenStorageProvider);
     String? token;
     try {
       token =
@@ -97,12 +97,12 @@ class AuthController extends StateNotifier<AuthState> {
 
     state = const AuthState(loading: true, initializing: true);
     try {
-      final user = await _ref.read(authApiProvider).me();
+      final user = await ref.read(authApiProvider).me();
       state = AuthState(user: user);
     } catch (error) {
       if (_isUnauthorized(error)) {
         await tokenStorage.clear();
-        await _ref.read(apiCacheProvider).clear();
+        await ref.read(apiCacheProvider).clear();
         state = const AuthState();
         return;
       }
@@ -118,15 +118,15 @@ class AuthController extends StateNotifier<AuthState> {
       return;
     }
     try {
-      final user = await _ref.read(authApiProvider).me();
-      if (mounted) {
+      final user = await ref.read(authApiProvider).me();
+      if (!_disposed) {
         state = AuthState(user: user);
       }
     } catch (error) {
       if (_isUnauthorized(error)) {
-        await _ref.read(tokenStorageProvider).clear();
-        await _ref.read(apiCacheProvider).clear();
-        if (mounted) {
+        await ref.read(tokenStorageProvider).clear();
+        await ref.read(apiCacheProvider).clear();
+        if (!_disposed) {
           state = const AuthState();
         }
       }
@@ -137,11 +137,11 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     state = state.copyWith(loading: true, clearError: true);
     try {
-      final result = await _ref
+      final result = await ref
           .read(authApiProvider)
           .login(email: email, password: password);
-      await _ref.read(apiCacheProvider).clear();
-      await _ref.read(tokenStorageProvider).saveToken(result.token);
+      await ref.read(apiCacheProvider).clear();
+      await ref.read(tokenStorageProvider).saveToken(result.token);
       state = AuthState(user: result.user);
     } catch (error) {
       state = AuthState(
@@ -161,14 +161,14 @@ class AuthController extends StateNotifier<AuthState> {
   }) async {
     state = state.copyWith(loading: true, clearError: true);
     try {
-      final result = await _ref.read(authApiProvider).register(
+      final result = await ref.read(authApiProvider).register(
             email: email,
             password: password,
             name: name,
             inviteCode: inviteCode,
           );
-      await _ref.read(apiCacheProvider).clear();
-      await _ref.read(tokenStorageProvider).saveToken(result.token);
+      await ref.read(apiCacheProvider).clear();
+      await ref.read(tokenStorageProvider).saveToken(result.token);
       state = AuthState(user: result.user);
     } catch (error) {
       state = AuthState(
@@ -182,7 +182,7 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
-      await _ref.read(authApiProvider).logout().timeout(
+      await ref.read(authApiProvider).logout().timeout(
             const Duration(seconds: 2),
           );
     } catch (_) {
@@ -201,7 +201,7 @@ class AuthController extends StateNotifier<AuthState> {
     final previousUser = state.user;
     state = state.copyWith(loading: true, clearError: true);
     try {
-      await _ref.read(authApiProvider).logoutAll();
+      await ref.read(authApiProvider).logoutAll();
     } catch (error) {
       if (_isUnauthorized(error)) {
         try {
@@ -234,7 +234,7 @@ class AuthController extends StateNotifier<AuthState> {
     final previousUser = state.user;
     state = state.copyWith(loading: true, clearError: true);
     try {
-      await _ref.read(authApiProvider).deleteAccount(
+      await ref.read(authApiProvider).deleteAccount(
             currentPassword: currentPassword,
           );
     } catch (error) {
@@ -273,7 +273,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(loading: true, clearError: true);
     AuthResult result;
     try {
-      result = await _ref.read(authApiProvider).changePassword(
+      result = await ref.read(authApiProvider).changePassword(
             currentPassword: currentPassword,
             newPassword: newPassword,
           );
@@ -296,8 +296,8 @@ class AuthController extends StateNotifier<AuthState> {
     }
 
     try {
-      await _ref.read(apiCacheProvider).clear();
-      await _ref.read(tokenStorageProvider).saveToken(result.token);
+      await ref.read(apiCacheProvider).clear();
+      await ref.read(tokenStorageProvider).saveToken(result.token);
     } catch (_) {
       try {
         await _clearLocalSession();
@@ -323,8 +323,8 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> _clearLocalSession() async {
     await Future.wait([
-      _ref.read(tokenStorageProvider).clear(),
-      _ref.read(apiCacheProvider).clear(),
+      ref.read(tokenStorageProvider).clear(),
+      ref.read(apiCacheProvider).clear(),
     ]);
   }
 }

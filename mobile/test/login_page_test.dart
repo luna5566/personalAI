@@ -91,7 +91,6 @@ void main() {
 }
 
 class FakeLoginController extends AuthController {
-  FakeLoginController(super.ref);
 
   static String? lastEmail;
   static String? lastPassword;

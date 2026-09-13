@@ -23,9 +23,23 @@ class CacheFallbackNotice {
   final String? retryAfter;
 }
 
-final cacheFallbackNoticeProvider = StateProvider<CacheFallbackNotice?>((ref) {
-  return null;
-});
+final cacheFallbackNoticeProvider =
+    NotifierProvider<CacheFallbackNoticeController, CacheFallbackNotice?>(
+  CacheFallbackNoticeController.new,
+);
+
+class CacheFallbackNoticeController extends Notifier<CacheFallbackNotice?> {
+  @override
+  CacheFallbackNotice? build() => null;
+
+  void show(CacheFallbackNotice notice) {
+    state = notice;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
 
 const cacheRevalidationGenerationExtra = 'cache_revalidation_generation';
 
@@ -76,27 +90,25 @@ class CacheRevalidationState {
 }
 
 final cacheRevalidationTrackerProvider =
-    StateNotifierProvider<CacheRevalidationTracker, CacheRevalidationState>(
-        (ref) {
-  return CacheRevalidationTracker(
-    () => ref.read(cacheFallbackNoticeProvider.notifier).state = null,
-  );
-});
+    NotifierProvider<CacheRevalidationTracker, CacheRevalidationState>(
+  CacheRevalidationTracker.new,
+);
 
 final cacheRevalidationProvider = Provider<int>((ref) {
   return ref.watch(cacheRevalidationTrackerProvider).generation;
 });
 
-class CacheRevalidationTracker extends StateNotifier<CacheRevalidationState> {
-  CacheRevalidationTracker(
-    this._onFullyRevalidated, {
-    Duration settleDelay = const Duration(milliseconds: 100),
-  })  : _settleDelay = settleDelay,
-        super(const CacheRevalidationState());
+class CacheRevalidationTracker extends Notifier<CacheRevalidationState> {
+  CacheRevalidationTracker({
+    void Function()? onFullyRevalidated,
+    this._settleDelay = const Duration(milliseconds: 100),
+  })  : _ctorOnFullyRevalidated = onFullyRevalidated;
 
-  final void Function() _onFullyRevalidated;
+  // 直连构造（测试）时注入回调；挂在 provider 上时走默认实现。
+  final void Function()? _ctorOnFullyRevalidated;
   final Duration _settleDelay;
   Timer? _settleTimer;
+  bool _disposed = false;
 
   int start() {
     _settleTimer?.cancel();
@@ -174,23 +186,35 @@ class CacheRevalidationTracker extends StateNotifier<CacheRevalidationState> {
     }
   }
 
+  @override
+  CacheRevalidationState build() {
+    ref.onDispose(() {
+      _disposed = true;
+      _settleTimer?.cancel();
+    });
+    return const CacheRevalidationState();
+  }
+
+  void _notifyFullyRevalidated() {
+    final override = _ctorOnFullyRevalidated;
+    if (override != null) {
+      override();
+      return;
+    }
+    ref.read(cacheFallbackNoticeProvider.notifier).clear();
+  }
+
   void _scheduleSettlement() {
     _settleTimer?.cancel();
     _settleTimer = Timer(_settleDelay, () {
-      if (!mounted || !state.inProgress || state.activeRequests != 0) {
+      if (_disposed || !state.inProgress || state.activeRequests != 0) {
         return;
       }
       final fullyRevalidated = state.fullyRevalidated;
       state = state.copyWith(inProgress: false);
       if (fullyRevalidated) {
-        _onFullyRevalidated();
+        _notifyFullyRevalidated();
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _settleTimer?.cancel();
-    super.dispose();
   }
 }

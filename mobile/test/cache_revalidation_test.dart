@@ -48,7 +48,7 @@ void main() {
     addTearDown(container.dispose);
     final subscription = container.listen<AsyncValue<List<KnowledgeTag>>>(
       tagsProvider,
-      (_, __) {},
+      (_, _) {},
       fireImmediately: true,
     );
     addTearDown(subscription.close);

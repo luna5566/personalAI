@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/user_error_message.dart';
 import '../../../core/widgets/async_state_view.dart';
+import '../../../core/widgets/markdown_text.dart';
 import '../models/document.dart';
 import '../../chat/providers/chat_provider.dart';
 import '../../organize/providers/organize_provider.dart';
@@ -64,16 +65,16 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
         title: const Text('资料详情'),
         actions: [
           IconButton(
-            onPressed: document.valueOrNull?.isIndexed == true
-                ? () => _askDocument(document.valueOrNull!)
+            onPressed: document.value?.isIndexed == true
+                ? () => _askDocument(document.value!)
                 : null,
             icon: const Icon(Icons.chat_bubble_outline),
             tooltip: '针对这份资料提问',
           ),
           IconButton(
-            onPressed: _savingMeta || document.valueOrNull == null
+            onPressed: _savingMeta || document.value == null
                 ? null
-                : () => _editDocument(document.valueOrNull!),
+                : () => _editDocument(document.value!),
             icon: _savingMeta
                 ? const SizedBox.square(
                     dimension: 20,
@@ -83,7 +84,7 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
             tooltip: '编辑资料',
           ),
           PopupMenuButton<String>(
-            enabled: !_organizing && document.valueOrNull?.isIndexed == true,
+            enabled: !_organizing && document.value?.isIndexed == true,
             icon: _organizing
                 ? const SizedBox.square(
                     dimension: 20,
@@ -219,7 +220,9 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('整理结果'),
-          content: SingleChildScrollView(child: Text(result.result)),
+          content: SingleChildScrollView(
+            child: MarkdownText(data: result.result),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -302,7 +305,7 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
                       onTap: () => Navigator.of(context).pop(item.documentId),
                     );
                   },
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemCount: related.length,
                 ),
         ),
@@ -324,7 +327,7 @@ class _DocumentDetailPageState extends ConsumerState<DocumentDetailPage> {
     String content,
     List<String> sourceDocumentIds,
   ) async {
-    final source = ref.read(documentDetailProvider(_detailQuery)).valueOrNull;
+    final source = ref.read(documentDetailProvider(_detailQuery)).value;
     final title = '${source?.title ?? '资料整理'} - ${_modeLabel(mode)}';
     try {
       final savedDocumentId = await ref.read(organizeApiProvider).saveResult(

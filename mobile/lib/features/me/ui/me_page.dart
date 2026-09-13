@@ -395,7 +395,7 @@ class _AuthSessionsDialogState extends ConsumerState<_AuthSessionsDialog> {
             height: 160,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (_, __) => SizedBox(
+          error: (_, _) => SizedBox(
             height: 160,
             child: Center(
               child: Column(
@@ -440,7 +440,7 @@ class _AuthSessionsDialogState extends ConsumerState<_AuthSessionsDialog> {
           child: ListView.separated(
             shrinkWrap: true,
             itemCount: sessions.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final session = sessions[index];
               final isRevoking = _revokingSessionId == session.id;
@@ -714,7 +714,7 @@ class _StorageSummaryTile extends StatelessWidget {
           ),
         );
       },
-      error: (_, __) => Card(
+      error: (_, _) => Card(
         child: ListTile(
           leading: const Icon(Icons.storage_outlined),
           title: const Text('存储空间'),

@@ -78,7 +78,7 @@ class _RegistrationInvitesPageState
           Expanded(
             child: invites.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => _InviteLoadError(
+              error: (_, _) => _InviteLoadError(
                 onRetry: () => ref.invalidate(
                   registrationInvitesPageProvider(_query),
                 ),
@@ -112,7 +112,7 @@ class _RegistrationInvitesPageState
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: page.items.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final invite = page.items[index];
                 return _RegistrationInviteTile(

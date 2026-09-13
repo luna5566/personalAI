@@ -12,7 +12,19 @@ final tokenStorageProvider = Provider<TokenStorage>((ref) {
   return TokenStorage(const FlutterSecureStorage());
 });
 
-final authSessionInvalidationProvider = StateProvider<int>((ref) => 0);
+final authSessionInvalidationProvider =
+    NotifierProvider<AuthSessionInvalidationCounter, int>(
+  AuthSessionInvalidationCounter.new,
+);
+
+class AuthSessionInvalidationCounter extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() {
+    state += 1;
+  }
+}
 
 final apiCacheProvider = Provider<ApiCache>((ref) {
   return ApiCache(const FlutterSecureStorage());
@@ -63,7 +75,7 @@ final dioProvider = Provider<Dio>((ref) {
           );
           final generation = _revalidationGeneration(response.requestOptions);
           if (generation == null) {
-            ref.read(cacheFallbackNoticeProvider.notifier).state = null;
+            ref.read(cacheFallbackNoticeProvider.notifier).clear();
           } else {
             ref
                 .read(cacheRevalidationTrackerProvider.notifier)
@@ -71,7 +83,7 @@ final dioProvider = Provider<Dio>((ref) {
           }
         } else {
           await apiCache.clear();
-          ref.read(cacheFallbackNoticeProvider.notifier).state = null;
+          ref.read(cacheFallbackNoticeProvider.notifier).clear();
           ref.read(cacheRevalidationTrackerProvider.notifier).cancel();
         }
         handler.next(response);
@@ -84,21 +96,22 @@ final dioProvider = Provider<Dio>((ref) {
             // The in-memory session still needs to expire if secure storage fails.
           }
           await apiCache.clear();
-          ref.read(cacheFallbackNoticeProvider.notifier).state = null;
+          ref.read(cacheFallbackNoticeProvider.notifier).clear();
           ref.read(cacheRevalidationTrackerProvider.notifier).cancel();
-          ref.read(authSessionInvalidationProvider.notifier).state += 1;
+          ref.read(authSessionInvalidationProvider.notifier).bump();
         }
         if (_canUseCachedResponse(error)) {
           final cached = await apiCache.readResponse(error.requestOptions);
           if (cached != null) {
             final retryAfter = error.response?.headers.value('retry-after');
             final fallbackReason = _cacheFallbackReason(error);
-            ref.read(cacheFallbackNoticeProvider.notifier).state =
-                CacheFallbackNotice(
-              reason: fallbackReason,
-              cachedAt: cached.cachedAt,
-              retryAfter: retryAfter,
-            );
+            ref.read(cacheFallbackNoticeProvider.notifier).show(
+                  CacheFallbackNotice(
+                    reason: fallbackReason,
+                    cachedAt: cached.cachedAt,
+                    retryAfter: retryAfter,
+                  ),
+                );
             ref
                 .read(cacheRevalidationTrackerProvider.notifier)
                 .requestUsedFallback(
@@ -113,7 +126,7 @@ final dioProvider = Provider<Dio>((ref) {
                 extra: {
                   'from_cache': true,
                   'cache_fallback_reason': fallbackReason.value,
-                  if (retryAfter != null) 'retry_after': retryAfter,
+                  'retry_after': ?retryAfter,
                   'cached_at': cached.cachedAt.toIso8601String(),
                 },
               ),

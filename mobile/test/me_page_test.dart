@@ -306,7 +306,6 @@ const _emptyStats = DocumentStats(
 );
 
 class FakeAuthController extends AuthController {
-  FakeAuthController(super.ref);
 
   static int changePasswordCalls = 0;
   static int deleteAccountCalls = 0;
@@ -344,7 +343,6 @@ class FakeAuthController extends AuthController {
 }
 
 class AdminAuthController extends FakeAuthController {
-  AdminAuthController(super.ref);
 
   @override
   Future<void> loadCurrentUser() async {

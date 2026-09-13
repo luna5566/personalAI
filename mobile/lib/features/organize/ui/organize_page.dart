@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/user_error_message.dart';
+import '../../../core/widgets/markdown_text.dart';
 import '../../chat/providers/chat_provider.dart';
 import '../../documents/models/document.dart';
 import '../../documents/providers/documents_provider.dart';
@@ -118,7 +119,7 @@ class _OrganizePageState extends ConsumerState<OrganizePage> {
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(result.result),
+                        child: MarkdownText(data: result.result),
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -185,7 +186,7 @@ class _OrganizePageState extends ConsumerState<OrganizePage> {
     final selection = await showTagPickerDialog(
       context,
       selectedNames: {
-        if (_selectedTag != null) _selectedTag!,
+        ?_selectedTag,
       },
       maxSelection: 1,
     );
@@ -273,12 +274,12 @@ class _OrganizeScopeBar extends StatelessWidget {
                 onSelected: (_) => onSelected(tag.name),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemCount: items.length + 2,
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       loading: () => const SizedBox(
         height: 44,
         child: Align(
@@ -345,7 +346,7 @@ class _DocumentSelectionPanel extends StatelessWidget {
           ],
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       loading: () => const SizedBox(
         height: 44,
         child: Align(

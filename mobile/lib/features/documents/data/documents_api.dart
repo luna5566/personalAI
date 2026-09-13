@@ -90,8 +90,8 @@ class DocumentsApi {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/documents/$id',
       data: {
-        if (title != null) 'title': title,
-        if (tags != null) 'tags': tags,
+        'title': ?title,
+        'tags': ?tags,
       },
     );
     return KnowledgeDocument.fromJson(response.data!);

@@ -154,7 +154,6 @@ void main() {
 }
 
 class FakeChatController extends ChatController {
-  FakeChatController(super.ref);
 
   static String? lastQuestion;
 

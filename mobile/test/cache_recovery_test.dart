@@ -17,11 +17,12 @@ void main() {
       overrides: [cacheRecoveryClientProvider.overrideWithValue(dio)],
     );
     addTearDown(container.dispose);
-    container.read(cacheFallbackNoticeProvider.notifier).state =
-        CacheFallbackNotice(
-      reason: CacheFallbackReason.offline,
-      cachedAt: DateTime.utc(2026, 7, 17, 3, 4),
-    );
+    container.read(cacheFallbackNoticeProvider.notifier).show(
+          CacheFallbackNotice(
+            reason: CacheFallbackReason.offline,
+            cachedAt: DateTime.utc(2026, 7, 17, 3, 4),
+          ),
+        );
     final controller = container.read(cacheRecoveryControllerProvider.notifier);
 
     final firstProbe = controller.retry();
@@ -39,7 +40,7 @@ void main() {
     expect(container.read(cacheRecoveryControllerProvider), isTrue);
     expect(container.read(cacheFallbackNoticeProvider), isNotNull);
 
-    container.read(cacheFallbackNoticeProvider.notifier).state = null;
+    container.read(cacheFallbackNoticeProvider.notifier).clear();
     await Future.wait([firstProbe, secondProbe]);
 
     expect(container.read(cacheRecoveryControllerProvider), isFalse);
@@ -59,7 +60,7 @@ void main() {
       cachedAt: DateTime.utc(2026, 7, 17, 3, 4),
       retryAfter: '5',
     );
-    container.read(cacheFallbackNoticeProvider.notifier).state = notice;
+    container.read(cacheFallbackNoticeProvider.notifier).show(notice);
     final controller = container.read(cacheRecoveryControllerProvider.notifier);
 
     final probe = controller.retry();
@@ -79,20 +80,27 @@ void main() {
     dio.httpClientAdapter = adapter;
     addTearDown(dio.close);
     var revalidationCount = 0;
-    final controller = CacheRecoveryController(
-      dio,
-      () => revalidationCount += 1,
-      revalidationTimeout: Duration.zero,
+    final container = ProviderContainer(
+      overrides: [
+        cacheRecoveryClientProvider.overrideWithValue(dio),
+        cacheRevalidationTrackerProvider.overrideWith(
+          () => _CountingRevalidationTracker(() => revalidationCount += 1),
+        ),
+        cacheRecoveryControllerProvider.overrideWith(
+          () => _ZeroTimeoutRecoveryController(),
+        ),
+      ],
     );
-    addTearDown(controller.dispose);
+    addTearDown(container.dispose);
 
+    final controller = container.read(cacheRecoveryControllerProvider.notifier);
     final recovery = controller.retry();
     await _waitForRequest(adapter);
     adapter.respond(statusCode: 200, body: '{"status":"ready"}');
     await recovery;
 
     expect(revalidationCount, 1);
-    expect(controller.state, isFalse);
+    expect(container.read(cacheRecoveryControllerProvider), isFalse);
   });
 }
 
@@ -114,6 +122,24 @@ Future<void> _waitForRequest(ControlledRecoveryAdapter adapter) async {
     await Future<void>.delayed(Duration.zero);
   }
   fail('The readiness probe was not sent.');
+}
+
+class _ZeroTimeoutRecoveryController extends CacheRecoveryController {
+  _ZeroTimeoutRecoveryController() : super(revalidationTimeout: Duration.zero);
+}
+
+class _CountingRevalidationTracker extends CacheRevalidationTracker {
+  _CountingRevalidationTracker(void Function() onStart)
+      : _onStart = onStart,
+        super(settleDelay: Duration.zero);
+
+  final void Function() _onStart;
+
+  @override
+  int start() {
+    _onStart();
+    return super.start();
+  }
 }
 
 class ControlledRecoveryAdapter implements HttpClientAdapter {

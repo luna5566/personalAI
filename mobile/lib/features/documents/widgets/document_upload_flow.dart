@@ -71,17 +71,16 @@ Future<bool> pickAndUploadDocument(
   if (!context.mounted) {
     return false;
   }
-  final result = await FilePicker.platform.pickFiles(
+  final files = await FilePicker.pickFiles(
     type: FileType.custom,
     allowedExtensions: allowedUploadExtensions(capabilities),
-    withData: true,
   );
-  final file = result?.files.single;
-  final path = file?.path;
-  final bytes = file?.bytes;
+  final file = files.isNotEmpty ? files.first : null;
   if (file == null) {
     return false;
   }
+  final path = file.path;
+  final bytes = path == null ? await file.readAsBytes() : null;
   if (!context.mounted) {
     return false;
   }
@@ -113,7 +112,7 @@ Future<bool> pickAndUploadDocument(
     isScrollControlled: true,
     builder: (context) => UploadOptionsSheet(
       filename: file.name,
-      tags: ref.read(tagsProvider).valueOrNull ?? const [],
+      tags: ref.read(tagsProvider).value ?? const [],
       initialTag: initialTag,
     ),
   );

@@ -78,7 +78,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: Text(auth.loading ? '登录中' : '登录'),
           ),
           const SizedBox(height: 8),
-          if (authConfig.valueOrNull?.registrationEnabled == true)
+          if (authConfig.value?.registrationEnabled == true)
             TextButton(
               onPressed: auth.loading ? null : () => context.push('/register'),
               child: const Text('创建新账号'),
