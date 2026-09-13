@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 from sqlalchemy.dialects import postgresql
 
 from app.api.deps import AuthenticatedAccess, authenticated_access, db_session
@@ -67,7 +67,7 @@ def _user(password="current-password"):
         password_hash=hash_password(password),
         name="Delete Me",
         avatar_url=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 

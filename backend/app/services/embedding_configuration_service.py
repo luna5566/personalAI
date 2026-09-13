@@ -10,7 +10,6 @@ from app.models.embedding_configuration_state import EmbeddingConfigurationState
 from app.models.job import Job, JobStatus, JobType
 from app.services import job_service, settings_service
 
-
 EMBEDDING_CONFIGURATION_STATE_ID = 1
 EMBEDDING_CONFIGURATION_LOCK_ID = 731_536_1537
 REBUILDABLE_DOCUMENT_STATUSES = {

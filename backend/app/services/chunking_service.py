@@ -9,7 +9,6 @@ from app.rag.chunker import ChunkData, iter_text_chunks, split_text_into_chunks
 from app.utils.hash import sha256_text
 from app.utils.text_cleaner import clean_text
 
-
 CHUNK_PERSIST_BATCH_SIZE = 256
 
 

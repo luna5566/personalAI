@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -15,8 +15,7 @@ from app.core.request_limits import (
 from app.models.document import DocumentStatus
 from app.models.job import JobStatus, JobType
 from app.services import job_service
-from app.workers import job_recovery
-from app.workers import document_pipeline
+from app.workers import document_pipeline, job_recovery
 
 
 class ControlSession:
@@ -342,7 +341,7 @@ def test_recovery_finishes_cancel_requested_job_without_dispatch(monkeypatch) ->
         status=JobStatus.CANCEL_REQUESTED.value,
         message="正在取消任务",
         error_message=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     class RecoverySession:
@@ -394,7 +393,7 @@ def test_recovery_rotates_execution_token_when_claiming_pending_job(monkeypatch)
         run_token=None,
         message="等待处理",
         error_message=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     captured = {}
@@ -414,7 +413,7 @@ def test_recovery_rotates_execution_token_when_claiming_pending_job(monkeypatch)
         def execute(self, statement, parameters=None):
             captured["timeout_statement"] = statement
             captured["timeout_parameters"] = parameters
-            return None
+            return
 
         def add(self, value):
             return None
@@ -652,7 +651,7 @@ def test_retry_route_dispatches_new_document_worker(monkeypatch) -> None:
         job_type=JobType.INDEX_DOCUMENT.value,
         status=JobStatus.FAILED.value,
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     retry = SimpleNamespace(
         id=uuid4(),
         user_id=user_id,
@@ -706,7 +705,7 @@ def test_retry_global_rebuild_records_current_configuration(monkeypatch) -> None
         job_type=JobType.REBUILD_ALL_EMBEDDINGS.value,
         status=JobStatus.FAILED.value,
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     retry = SimpleNamespace(
         id=uuid4(),
         user_id=user_id,

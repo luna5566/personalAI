@@ -5,9 +5,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.request_limits import (
+    DOCUMENT_DETAIL_CONTENT_PAGE_MAX_LENGTH,
     DOCUMENT_LIST_ERROR_PREVIEW_MAX_LENGTH,
     DOCUMENT_LIST_SUMMARY_PREVIEW_MAX_LENGTH,
-    DOCUMENT_DETAIL_CONTENT_PAGE_MAX_LENGTH,
     DOCUMENT_SUMMARY_MAX_LENGTH,
     DOCUMENT_TAG_LIMIT,
     DOCUMENT_TITLE_MAX_LENGTH,
@@ -15,7 +15,6 @@ from app.core.request_limits import (
     TAG_NAME_MAX_LENGTH,
 )
 from app.models.document import DocumentSourceType, DocumentStatus
-
 
 DocumentTagName = Annotated[
     str,

@@ -1,7 +1,6 @@
 import re
 from io import StringIO
 
-
 _WHITESPACE_RE = re.compile(r"[ \t\f\v]+")
 _LINE_BREAK_RE = re.compile(r"\r\n?|\n")
 

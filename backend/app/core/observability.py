@@ -12,9 +12,10 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from prometheus_client import (
-    REGISTRY,
     CONTENT_TYPE_LATEST,
+    REGISTRY,
     Counter,
+    Gauge,
     Histogram,
     generate_latest,
 )
@@ -40,6 +41,11 @@ ai_provider_call_duration_seconds = Histogram(
     "ai_provider_call_duration_seconds",
     "Outbound AI provider call latency by host",
     ["host"],
+)
+job_queue_depth = Gauge(
+    "job_queue_depth",
+    "Persistent jobs by status, refreshed by the recovery supervisor",
+    ["status"],
 )
 
 

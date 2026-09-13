@@ -1,7 +1,5 @@
 import app.models  # noqa: F401
-
 from app.core.database import Base
-
 
 EXPECTED_USER_OWNER_ACTIONS = {
     "auth_sessions": "CASCADE",

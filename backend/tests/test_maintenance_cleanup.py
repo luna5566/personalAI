@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from sqlalchemy.dialects import postgresql
@@ -33,7 +33,7 @@ class MaintenanceSession:
 def test_cleanup_deletes_bounded_oldest_rows_with_shared_cutoffs(
     monkeypatch,
 ) -> None:
-    now = datetime(2026, 7, 18, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
     db = MaintenanceSession(now)
     timeouts = []
     monkeypatch.setattr(maintenance_service, "SessionLocal", lambda: db)

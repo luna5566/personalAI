@@ -2,8 +2,8 @@ import asyncio
 from io import BytesIO
 from pathlib import Path
 
-from fastapi import UploadFile
 import pytest
+from fastapi import UploadFile
 
 from app.core.config import settings
 from app.storage import s3_storage

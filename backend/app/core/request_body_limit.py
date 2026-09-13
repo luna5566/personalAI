@@ -3,7 +3,6 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.exceptions import PRIVATE_RESPONSE_HEADERS
 
-
 REQUEST_BODY_TOO_LARGE_MESSAGE = "请求体超过大小限制"
 
 

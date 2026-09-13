@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import threading
 
 from app.workers import storage_deletion
@@ -69,10 +70,8 @@ def test_periodic_storage_deletion_loop_stops_on_cancellation(monkeypatch) -> No
             await asyncio.sleep(0.005)
         assert calls
         task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await task
-        except asyncio.CancelledError:
-            pass
         assert task.cancelled() is True
         assert calls == [(registry, None)]
 

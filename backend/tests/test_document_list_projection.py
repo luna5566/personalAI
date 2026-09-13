@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -49,7 +49,7 @@ def test_document_list_projection_excludes_large_and_detail_only_columns() -> No
 
 
 def test_document_list_item_serializes_preview_attributes_under_api_names() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     source = SimpleNamespace(
         id=uuid4(),
         title="资料标题",
@@ -88,7 +88,7 @@ def test_document_list_item_rejects_oversized_internal_previews(
     attribute: str,
     length: int,
 ) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     source = SimpleNamespace(
         id=uuid4(),
         title="资料标题",

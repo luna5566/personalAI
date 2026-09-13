@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -17,7 +17,7 @@ from app.services import chat_service
 
 
 def test_conversation_list_uses_narrow_rows_without_scope() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     conversation_id = uuid4()
     db = MagicMock()
     db.scalar.return_value = 1
@@ -69,7 +69,7 @@ def test_conversation_detail_projects_bounded_structured_scope() -> None:
 
 
 def test_conversation_read_normalizes_invalid_projected_scope() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     valid_document_id = uuid4()
     source = SimpleNamespace(
         id=uuid4(),

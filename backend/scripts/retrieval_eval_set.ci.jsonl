@@ -1,0 +1,15 @@
+{"question": "什么是“光合作用”？", "expected_keywords": ["光合作用"]}
+{"question": "解释一下“贝叶斯定理”的含义", "expected_keywords": ["贝叶斯定理"]}
+{"question": "“哥德巴赫猜想”说了什么？", "expected_keywords": ["哥德巴赫猜想"]}
+{"question": "“潮汐锁定”是怎么发生的？", "expected_keywords": ["潮汐锁定"]}
+{"question": "“酵母发酵”和面包有什么关系？", "expected_keywords": ["酵母发酵"]}
+{"question": "“向量索引”在检索系统里的作用", "expected_keywords": ["向量索引"]}
+{"question": "介绍“罗马水道”的工程特点", "expected_keywords": ["罗马水道"]}
+{"question": "“季风气候”的成因是什么？", "expected_keywords": ["季风气候"]}
+{"question": "“珊瑚白化”的原因是什么？", "expected_keywords": ["珊瑚白化"]}
+{"question": "“青霉素”是如何被发现的？", "expected_keywords": ["青霉素"]}
+{"question": "“板块构造”理论的核心观点", "expected_keywords": ["板块构造"]}
+{"question": "“丝绸之路”上流通哪些商品？", "expected_keywords": ["丝绸之路"]}
+{"question": "“蒸汽机车”是怎么工作的？", "expected_keywords": ["蒸汽机车"]}
+{"question": "什么是“量子纠缠”？", "expected_keywords": ["量子纠缠"]}
+{"question": "How does pgvector support similarity search?", "expected_keywords": ["pgvector"]}

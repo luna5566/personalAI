@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -54,7 +54,7 @@ def test_message_read_serializes_bounded_preview_and_truncation_marker() -> None
         content_preview="回答前缀",
         content_truncated=True,
         citations_preview=[],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     item = MessageRead.model_validate(source)
@@ -73,7 +73,7 @@ def test_message_read_rejects_oversized_internal_preview() -> None:
         content_preview="x" * (MESSAGE_LIST_CONTENT_PREVIEW_MAX_LENGTH + 1),
         content_truncated=True,
         citations_preview=[],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     with pytest.raises(ValidationError):
@@ -109,7 +109,7 @@ def test_message_read_normalizes_projected_citations_and_discards_invalid_items(
             _citation_payload(),
             _citation_payload(document_id="not-a-uuid"),
         ],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     item = MessageRead.model_validate(source)

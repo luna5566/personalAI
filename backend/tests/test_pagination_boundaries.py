@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -110,7 +110,7 @@ def test_service_pagination_rejects_invalid_scalar_values(
 
 def test_timestamp_and_text_cursors_round_trip() -> None:
     timestamp_cursor = TimestampIdCursor(
-        timestamp=datetime(2026, 7, 18, 12, 30, 45, 123456, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 7, 18, 12, 30, 45, 123456, tzinfo=UTC),
         id=uuid4(),
     )
     encoded_timestamp = encode_timestamp_id_cursor(
@@ -155,7 +155,7 @@ def test_recent_message_cursor_cannot_cross_into_the_ascending_scan(
     monkeypatch,
 ) -> None:
     next_cursor = TimestampIdCursor(
-        timestamp=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 7, 18, tzinfo=UTC),
         id=uuid4(),
     )
     monkeypatch.setattr(
@@ -188,7 +188,7 @@ def test_recent_message_cursor_cannot_cross_into_the_ascending_scan(
 def test_cursor_scans_use_keyset_order_and_one_row_lookahead() -> None:
     user_id = uuid4()
     conversation_id = uuid4()
-    start = datetime(2026, 7, 18, tzinfo=timezone.utc)
+    start = datetime(2026, 7, 18, tzinfo=UTC)
     cursor = TimestampIdCursor(timestamp=start, id=uuid4())
 
     document_rows = [

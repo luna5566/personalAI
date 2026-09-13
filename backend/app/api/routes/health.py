@@ -1,19 +1,19 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request, Response, status
 from sqlalchemy import text
 
 from app.ai.http_client import provider_request_limiter
-from app.core.database import (
-    SessionLocal,
-    database_pool_snapshot,
-    set_local_statement_timeout,
-)
 from app.core.config import (
     DATABASE_HNSW_EF_CONSTRUCTION,
     DATABASE_HNSW_M,
     DATABASE_VECTOR_DIMENSIONS,
     settings,
+)
+from app.core.database import (
+    SessionLocal,
+    database_pool_snapshot,
+    set_local_statement_timeout,
 )
 from app.services import storage_deletion_service
 from app.workers.job_execution import job_worker_limiter
@@ -278,7 +278,7 @@ def _job_recovery_status(request: Request) -> dict[str, str | int | float | None
         if isinstance(recovery_state, JobRecoveryState)
         else None
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     scan_stale_after_seconds = settings.job_recovery_scan_stale_after_seconds
     freshness_timeout_seconds = max(
         settings.job_recovery_interval_seconds * 3,
@@ -377,7 +377,7 @@ def _storage_deletion_status(
         if isinstance(deletion_state, StorageDeletionState)
         else None
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     batch_stale_after_seconds = settings.storage_deletion_lease_seconds
     freshness_timeout_seconds = max(
         settings.storage_deletion_interval_seconds * 3,

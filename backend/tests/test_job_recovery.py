@@ -1,12 +1,13 @@
 import asyncio
+import contextlib
 import threading
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
-from app.models.job import JobStatus, JobType
 from app import main as app_main
+from app.models.job import JobStatus, JobType
 from app.storage import storage_service
 from app.workers import document_pipeline, job_recovery
 
@@ -510,10 +511,8 @@ def test_periodic_recovery_continues_after_scan_failure(monkeypatch) -> None:
         )
         await asyncio.wait_for(recovered.wait(), timeout=1)
         task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await task
-        except asyncio.CancelledError:
-            pass
         snapshot = recovery_state.snapshot()
         assert snapshot.consecutive_failures == 0
         assert snapshot.last_success_at is not None

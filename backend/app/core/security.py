@@ -1,12 +1,12 @@
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+import jwt
 from argon2 import PasswordHasher, Type
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
-import jwt
 
 from app.core.config import settings
 
@@ -84,7 +84,7 @@ def create_access_token(
     issued_at: datetime | None = None,
     expires_at: datetime | None = None,
 ) -> str:
-    issued_at = issued_at or datetime.now(timezone.utc)
+    issued_at = issued_at or datetime.now(UTC)
     expires_at = expires_at or (
         issued_at + timedelta(minutes=settings.access_token_expire_minutes)
     )
@@ -125,6 +125,6 @@ def decode_access_token(token: str) -> AccessTokenClaims:
     return AccessTokenClaims(
         user_id=UUID(payload["sub"]),
         session_id=UUID(payload["jti"]),
-        issued_at=datetime.fromtimestamp(payload["iat"], timezone.utc),
-        expires_at=datetime.fromtimestamp(payload["exp"], timezone.utc),
+        issued_at=datetime.fromtimestamp(payload["iat"], UTC),
+        expires_at=datetime.fromtimestamp(payload["exp"], UTC),
     )

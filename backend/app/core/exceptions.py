@@ -11,7 +11,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.pagination import PaginationError
 
-
 logger = logging.getLogger(__name__)
 DATABASE_UNAVAILABLE_MESSAGE = "数据库暂时不可用，请稍后重试"
 VALIDATION_ERROR_MESSAGE = "请求参数不合法"

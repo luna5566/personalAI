@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
-import threading
 from typing import Any, TypeVar
 
 from app.core.config import settings
-
 
 ResultT = TypeVar("ResultT")
 

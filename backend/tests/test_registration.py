@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import db_session

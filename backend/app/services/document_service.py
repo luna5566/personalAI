@@ -13,8 +13,8 @@ from app.core.pagination import (
     validate_cursor_page_size,
 )
 from app.core.request_limits import (
-    DOCUMENT_FILENAME_MAX_LENGTH,
     DOCUMENT_DETAIL_CONTENT_PAGE_MAX_LENGTH,
+    DOCUMENT_FILENAME_MAX_LENGTH,
     DOCUMENT_LIST_ERROR_PREVIEW_MAX_LENGTH,
     DOCUMENT_LIST_SUMMARY_PREVIEW_MAX_LENGTH,
     DOCUMENT_MIME_TYPE_MAX_LENGTH,
@@ -193,7 +193,7 @@ def create_note(
     except Exception:
         db.rollback()
         raise
-    setattr(document, "tags", sorted(merged_tags))
+    document.tags = sorted(merged_tags)
     return document
 
 
@@ -822,7 +822,7 @@ def attach_tags(db: Session, documents: list[Document]) -> list[Document]:
         tags_by_document[document_id].append(tag_name)
 
     for document in documents:
-        setattr(document, "tags", tags_by_document[document.id])
+        document.tags = tags_by_document[document.id]
     return documents
 
 

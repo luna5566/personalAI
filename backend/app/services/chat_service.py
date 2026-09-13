@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -19,19 +19,20 @@ from sqlalchemy.orm import Session, load_only, with_expression
 
 from app.ai.llm_provider import LLMProvider, get_llm_provider
 from app.ai.output_validation import validate_provider_text_length
+from app.core.config import settings
 from app.core.pagination import (
     TimestampIdCursor,
     offset_for_page,
     validate_cursor_page_size,
 )
 from app.core.request_limits import (
+    CHAT_ANSWER_MAX_LENGTH,
     CHAT_CITATION_LIMIT,
     CHAT_CITATION_TEXT_MAX_LENGTH,
+    CHAT_HISTORY_CONTEXT_MESSAGE_MAX_LENGTH,
     CHAT_SCOPE_DOCUMENT_LIMIT,
     CHAT_SCOPE_SOURCE_TYPE_LIMIT,
     CHAT_SCOPE_TAG_LIMIT,
-    CHAT_ANSWER_MAX_LENGTH,
-    CHAT_HISTORY_CONTEXT_MESSAGE_MAX_LENGTH,
     DOCUMENT_TITLE_MAX_LENGTH,
     MESSAGE_LIST_CONTENT_PREVIEW_MAX_LENGTH,
     TAG_NAME_MAX_LENGTH,
@@ -41,10 +42,10 @@ from app.models.message import Message, MessageRole
 from app.rag.citation_builder import build_citations
 from app.rag.context_builder import build_context
 from app.schemas.chat import (
-    Citation,
     ChatQueryRequest,
     ChatQueryResponse,
     ChatScope,
+    Citation,
     normalize_legacy_chat_scope,
 )
 from app.services import retrieval_service
@@ -95,7 +96,7 @@ def query(
             query=_retrieval_query_with_rewrite(
                 llm_provider, payload.question, prepared.history
             ),
-            top_k=8,
+            top_k=settings.chat_retrieval_top_k,
             document_ids=document_ids,
             tag_names=tag_names,
             source_types=source_types,
@@ -184,7 +185,7 @@ def query_stream(
             query=_retrieval_query_with_rewrite(
                 llm_provider, payload.question, prepared.history
             ),
-            top_k=8,
+            top_k=settings.chat_retrieval_top_k,
             document_ids=document_ids,
             tag_names=tag_names,
             source_types=source_types,
@@ -515,7 +516,7 @@ def update_conversation_title(
         )
         .values(
             title=" ".join(title.strip().split())[:255],
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         .returning(Conversation.id)
     )
@@ -592,7 +593,7 @@ def _persist_conversation_turn(
             user_id=user_id,
             title=prepared.title,
             scope=prepared.scope.model_dump(mode="json"),
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         db.add(conversation)
     else:
@@ -614,7 +615,7 @@ def _persist_conversation_turn(
             )
             .values(
                 scope=prepared.scope.model_dump(mode="json"),
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
             )
         )
     db.add(

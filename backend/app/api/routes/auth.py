@@ -4,7 +4,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import AuthenticatedAccess, authenticated_access, authenticated_user_id, db_session
+from app.api.deps import (
+    AuthenticatedAccess,
+    authenticated_access,
+    authenticated_user_id,
+    db_session,
+)
 from app.core.config import settings
 from app.schemas.auth import (
     AccountDelete,

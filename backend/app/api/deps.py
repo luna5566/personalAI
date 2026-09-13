@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import jwt
@@ -48,7 +48,7 @@ def authenticated_access(
     ).one_or_none()
     if (
         access_row is None
-        or access_row.expires_at <= datetime.now(timezone.utc)
+        or access_row.expires_at <= datetime.now(UTC)
     ):
         raise _unauthorized()
     return AuthenticatedAccess(

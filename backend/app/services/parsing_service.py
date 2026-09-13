@@ -1,9 +1,9 @@
-from dataclasses import dataclass
-from html.parser import HTMLParser
-from io import BytesIO, StringIO
-from pathlib import Path
 import tempfile
 import zipfile
+from dataclasses import dataclass
+from html.parser import HTMLParser
+from io import StringIO
+from pathlib import Path
 
 from pypdf import PdfReader
 

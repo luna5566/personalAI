@@ -1,18 +1,17 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 from sqlalchemy.dialects import postgresql
 
 from app.api.deps import AuthenticatedAccess, authenticated_access, db_session
 from app.api.routes.auth import router as auth_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
-from app.core.security import decode_access_token
-from app.core.security import hash_password, verify_password
+from app.core.security import decode_access_token, hash_password, verify_password
 from app.models.auth_session import AuthSession
 from app.schemas.auth import AuthSessionRead, PasswordChange
 from app.services import auth_service
@@ -117,7 +116,7 @@ def _user(password: str = "current-password"):
         password_hash=hash_password(password),
         name="User",
         avatar_url=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -186,7 +185,7 @@ def test_logout_all_deletes_every_users_session() -> None:
 def test_list_sessions_filters_user_and_expiration_and_marks_current() -> None:
     user_id = uuid4()
     current_session_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     sessions = [
         SimpleNamespace(
             id=current_session_id,
@@ -368,7 +367,7 @@ def test_sessions_route_marks_current_session(monkeypatch) -> None:
     app.include_router(auth_router)
     app.dependency_overrides[db_session] = lambda: object()
     app.dependency_overrides[authenticated_access] = lambda: access
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     def list_sessions(db, *, user_id, current_session_id):
         assert user_id == access.user_id

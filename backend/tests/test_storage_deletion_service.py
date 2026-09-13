@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -151,7 +151,7 @@ def test_storage_deletion_location_is_unique() -> None:
 
 
 def test_storage_deletion_queue_snapshot_aggregates_persistent_state() -> None:
-    now = datetime(2026, 7, 18, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, tzinfo=UTC)
     next_attempt = now + timedelta(minutes=5)
     statements = []
 
@@ -223,7 +223,7 @@ def test_backoff_storage_deletion_is_scheduled_at_database_now(
     monkeypatch,
     last_error,
 ) -> None:
-    now = datetime(2026, 7, 18, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, tzinfo=UTC)
     expired_token = uuid4()
     row = _retry_row(
         now,
@@ -268,7 +268,7 @@ def test_backoff_storage_deletion_is_scheduled_at_database_now(
         (
             {
                 "last_error": None,
-                "next_attempt_at": datetime(2026, 7, 18, tzinfo=timezone.utc)
+                "next_attempt_at": datetime(2026, 7, 18, tzinfo=UTC)
                 + timedelta(minutes=30),
             },
             "abandoned_backoff",
@@ -277,7 +277,7 @@ def test_backoff_storage_deletion_is_scheduled_at_database_now(
         (
             {
                 "lease_token": uuid4(),
-                "lease_expires_at": datetime(2026, 7, 18, tzinfo=timezone.utc)
+                "lease_expires_at": datetime(2026, 7, 18, tzinfo=UTC)
                 + timedelta(minutes=5),
             },
             "active_lease",
@@ -286,7 +286,7 @@ def test_backoff_storage_deletion_is_scheduled_at_database_now(
         ({"attempts": 0, "last_error": None}, "not_attempted", False),
         (
             {
-                "next_attempt_at": datetime(2026, 7, 18, tzinfo=timezone.utc)
+                "next_attempt_at": datetime(2026, 7, 18, tzinfo=UTC)
                 - timedelta(seconds=1),
             },
             "eligible",
@@ -301,7 +301,7 @@ def test_storage_deletion_retry_statuses_do_not_mutate_ineligible_rows(
     expected_status,
     retryable,
 ) -> None:
-    now = datetime(2026, 7, 18, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, tzinfo=UTC)
     row = _retry_row(now, **row_kwargs)
     session = _RetrySession(row, now)
     monkeypatch.setattr(
@@ -372,7 +372,7 @@ def test_enqueue_storage_deletion_rejects_partial_storage_scope() -> None:
 
 
 def test_claim_storage_deletions_assigns_a_finite_lease(monkeypatch) -> None:
-    now = datetime(2026, 7, 18, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, tzinfo=UTC)
     row = StorageDeletion(
         id=uuid4(),
         storage_backend="local",

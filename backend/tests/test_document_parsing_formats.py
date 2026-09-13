@@ -1,22 +1,21 @@
+import zipfile
 from pathlib import Path
 from uuid import uuid4
 
-import pytest
-import zipfile
-
 import fastapi
+import pytest
 
-from app.api.routes.documents import _detect_source_type
 from app.ai import ocr_provider
+from app.api.routes.documents import _detect_source_type
 from app.core.config import settings
 from app.models.document import Document, DocumentSourceType
-from app.storage import storage_service
 from app.services import parsing_service as parsing_service_module
 from app.services.parsing_service import (
     SCANNED_PDF_PAGE_MIN_CHARS,
     DocumentParsingError,
     parse_document,
 )
+from app.storage import storage_service
 
 
 @pytest.fixture

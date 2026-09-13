@@ -1,7 +1,6 @@
-from dataclasses import dataclass
-from collections.abc import Iterator
 import re
-
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 _PAGE_MARKER_RE = re.compile(r"^\[第\s*(\d+)\s*页\]\s*")
 

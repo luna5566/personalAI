@@ -8,7 +8,6 @@ from app.api.deps import authenticated_user_id, db_session
 from app.api.routes import chat, organize
 from app.core.exceptions import register_exception_handlers
 from app.schemas.chat import ChatQueryResponse
-from app.schemas.organize import OrganizeResponse
 
 
 class FakeAiLimiter:
@@ -113,8 +112,8 @@ def test_chat_query_proceeds_when_quota_available(monkeypatch) -> None:
 
 def test_ai_user_rate_limiter_blocks_after_threshold() -> None:
     from app.services.login_rate_limit_service import (
-        AiUserRateLimitPolicy,
         AiUserRateLimiter,
+        AiUserRateLimitPolicy,
         AuthRateLimitStore,
     )
 

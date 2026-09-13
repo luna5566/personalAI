@@ -1,11 +1,11 @@
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 from pydantic import ValidationError
 
 from app.api.deps import db_session
@@ -65,7 +65,7 @@ def _login_payload(password: str = "wrong-password") -> UserLogin:
 
 
 def _user():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     return SimpleNamespace(
         id=uuid4(),
@@ -73,7 +73,7 @@ def _user():
         password_hash="stored-password-hash",
         name="User",
         avatar_url=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -228,7 +228,7 @@ def test_scope_hash_does_not_store_raw_identifier() -> None:
 
 
 def test_record_only_upserts_request_scopes() -> None:
-    now = datetime(2026, 7, 18, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
 
     class RecordSession:
         def __init__(self) -> None:

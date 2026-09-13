@@ -52,6 +52,7 @@ class BatchSession:
             self.select_statements.append(statement)
             return self.loaded_chunk_batches.pop(0)
         self.timeline.append("db:delete-old")
+        return None
 
     def add_all(self, values):
         values = list(values)

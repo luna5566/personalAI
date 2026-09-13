@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.schemas.chat import ChatScope, normalize_legacy_chat_scope
 from app.services.retrieval_service import created_after_from_recent_days
@@ -41,5 +41,5 @@ def test_created_after_from_recent_days() -> None:
     assert created_after_from_recent_days(None) is None
     cutoff = created_after_from_recent_days(7)
     assert cutoff is not None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     assert now - timedelta(days=8) < cutoff < now - timedelta(days=6)

@@ -3,8 +3,8 @@ from io import BytesIO
 from types import SimpleNamespace
 from uuid import uuid4
 
-from fastapi import BackgroundTasks, UploadFile
 import pytest
+from fastapi import BackgroundTasks, UploadFile
 
 from app.api.routes import documents
 from app.models.document import DocumentStatus

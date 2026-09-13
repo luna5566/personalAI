@@ -104,7 +104,7 @@ def test_rejects_oversized_request_collections(schema, payload) -> None:
 
 
 def test_accepts_request_collections_at_their_limits() -> None:
-    assert CHAT_SCOPE_SOURCE_TYPE_LIMIT == len(DocumentSourceType)
+    assert len(DocumentSourceType) == CHAT_SCOPE_SOURCE_TYPE_LIMIT
 
     note = NoteCreate(
         content="content",

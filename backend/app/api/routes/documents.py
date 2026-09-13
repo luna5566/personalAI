@@ -2,7 +2,18 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import authenticated_user_id, db_session
@@ -27,11 +38,11 @@ from app.schemas.document import (
     DocumentListResponse,
     DocumentRead,
     DocumentScanResponse,
-    RelatedDocumentRead,
     DocumentStatsRead,
     DocumentUpdate,
     DocumentUploadResponse,
     NoteCreate,
+    RelatedDocumentRead,
 )
 from app.services import document_service, job_service, tag_service
 from app.storage import storage_service

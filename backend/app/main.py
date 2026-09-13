@@ -1,10 +1,9 @@
 import asyncio
 import logging
-from contextlib import asynccontextmanager
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from time import perf_counter
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -136,7 +135,12 @@ def create_app() -> FastAPI:
     if settings.metrics_enabled:
 
         @app.get(f"{settings.api_prefix}/metrics", include_in_schema=False)
-        def metrics() -> Response:
+        def metrics(request: Request) -> Response:
+            if settings.enforce_metrics_loopback and not _is_loopback_client(
+                request
+            ):
+                # 用 404 而不是 403，避免向外部探测者确认端点存在。
+                raise HTTPException(status_code=404, detail="Not Found")
             payload, content_type = render_metrics()
             return Response(content=payload, media_type=content_type)
 
@@ -166,7 +170,7 @@ class RequestObservabilityMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _record(request: Request, status: str, duration: float) -> None:
         if settings.metrics_enabled:
-            route = getattr(request.scope.get("route"), "path", "unmatched")
+            route = _route_template(request)
             method = request.method
             http_requests_total.labels(
                 method=method, route=route, status=status
@@ -174,6 +178,32 @@ class RequestObservabilityMiddleware(BaseHTTPMiddleware):
             http_request_duration_seconds.labels(
                 method=method, route=route
             ).observe(duration)
+
+
+_LOOPBACK_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "[::1]", "localhost"})
+
+
+def _is_loopback_client(request: Request) -> bool:
+    client = request.client
+    if client is None:
+        return False
+    return (client.host or "").casefold() in _LOOPBACK_CLIENT_HOSTS
+
+
+def _route_template(request: Request) -> str:
+    """返回带 API 前缀的路由模板。
+
+    FastAPI >= 0.141 的惰性 IncludedRouter 使 scope["route"].path 只含
+    路由自身路径（不含 include_router 前缀），这里按请求路径补回前缀，
+    保证指标标签与既有 `/api/...` 模板一致。
+    """
+    route = getattr(request.scope.get("route"), "path", None)
+    if route is None:
+        return "unmatched"
+    prefix = settings.api_prefix.rstrip("/")
+    if prefix and not route.startswith(prefix) and request.url.path.startswith(f"{prefix}/"):
+        return f"{prefix}{route}"
+    return route
 
 
 def _is_api_path(path: str) -> bool:

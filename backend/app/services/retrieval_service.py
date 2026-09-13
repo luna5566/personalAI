@@ -1,6 +1,6 @@
-from dataclasses import dataclass, replace
-from datetime import datetime, timedelta, timezone
 import re
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import Select, exists, func, literal, or_, select, union
@@ -22,9 +22,6 @@ from app.models.tag import DocumentTag, Tag
 from app.rag.reranker import rerank_chunks
 from app.services import tag_service
 from app.utils.sql import escape_like_pattern
-
-
-MIN_RETRIEVAL_SCORE = 0.35
 
 
 class RetrievalScopeValidationError(ValueError):
@@ -254,7 +251,7 @@ def created_after_from_recent_days(recent_days: int | None) -> datetime | None:
         return None
     if recent_days < 1:
         return None
-    return datetime.now(timezone.utc) - timedelta(days=recent_days)
+    return datetime.now(UTC) - timedelta(days=recent_days)
 
 
 def _apply_scope_filters(
@@ -451,6 +448,9 @@ def _is_cjk_text(value: str) -> bool:
 
 def _filter_relevant_chunks(
     chunks: list[RetrievedChunk],
-    min_score: float = MIN_RETRIEVAL_SCORE,
+    min_score: float | None = None,
 ) -> list[RetrievedChunk]:
-    return [chunk for chunk in chunks if chunk.score >= min_score]
+    threshold = (
+        settings.retrieval_min_score if min_score is None else min_score
+    )
+    return [chunk for chunk in chunks if chunk.score >= threshold]

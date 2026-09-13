@@ -17,8 +17,8 @@ from app.services.chat_service import (
     ConversationNotFoundError,
     _effective_scope,
     _prepare_conversation,
-    _retrieval_scope_filters,
     _retrieval_query,
+    _retrieval_scope_filters,
 )
 from app.services.retrieval_service import RetrievedChunk, _filter_relevant_chunks
 

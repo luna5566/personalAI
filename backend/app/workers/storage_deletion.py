@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import monotonic
 
 from app.core.config import settings
@@ -39,7 +40,7 @@ class StorageDeletionState:
         self._last_failed = 0
 
     def record_started(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             self._batch_started_at = now
             self._batch_started_monotonic = monotonic()
@@ -48,7 +49,7 @@ class StorageDeletionState:
         self,
         result: storage_deletion_service.StorageDeletionBatchResult,
     ) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             first_result = self._last_run_at is None
             self._finish_batch()
@@ -61,7 +62,7 @@ class StorageDeletionState:
                 self._last_failed = result.failed
 
     def record_failure(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             self._finish_batch()
             self._last_run_at = now
@@ -142,13 +143,11 @@ class StorageDeletionWakeup:
         self._loop.call_soon_threadsafe(self._event.set)
 
     async def wait(self, timeout_seconds: float) -> None:
-        try:
+        with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(
                 self._event.wait(),
                 timeout=timeout_seconds,
             )
-        except TimeoutError:
-            pass
         self._event.clear()
 
 

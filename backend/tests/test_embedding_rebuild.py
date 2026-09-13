@@ -69,7 +69,7 @@ class FakeSession:
 
     def refresh(self, value):
         self.connection_checked_out = True
-        return None
+        return
 
     def rollback(self):
         self.rolled_back = True
@@ -133,7 +133,6 @@ def test_indexed_document_without_chunks_is_recreated(monkeypatch) -> None:
         status=JobStatus.PENDING.value,
     )
     document = _document()
-    chunk = SimpleNamespace(id=uuid4())
     session = FakeSession(job, [document], [[]])
     updates = []
     recreated = []

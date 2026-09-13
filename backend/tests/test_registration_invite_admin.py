@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 
 from app.api.deps import authenticated_user_id, db_session
 from app.api.routes.registration_invites import router
@@ -12,7 +12,6 @@ from app.core.config import settings
 from app.schemas.registration_invite import (
     RegistrationInviteCreatedRead,
     RegistrationInvitePageRead,
-    RegistrationInviteRead,
     RegistrationInviteStatus,
 )
 from app.services import registration_invite_admin_service
@@ -59,7 +58,7 @@ def _invite(
     expired=False,
     revoked=False,
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return SimpleNamespace(
         id=uuid4(),
         created_at=now - timedelta(hours=2),
@@ -231,7 +230,7 @@ def test_create_route_returns_raw_code_once_without_cache(monkeypatch) -> None:
     app.dependency_overrides[authenticated_user_id] = (
         lambda: settings.runtime_settings_admin_user_id
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     def create_invite(db, *, user_id, valid_hours):
         assert valid_hours == 24

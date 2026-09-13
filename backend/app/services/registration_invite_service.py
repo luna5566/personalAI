@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -43,7 +43,7 @@ def create_registration_invite(
 ) -> CreatedRegistrationInvite:
     if valid_for <= timedelta(0):
         raise ValueError("registration invite validity must be positive")
-    issued_at = now or datetime.now(timezone.utc)
+    issued_at = now or datetime.now(UTC)
     raw_code = code or secrets.token_urlsafe(INVITE_RANDOM_BYTES)
     invite = AuthRegistrationInvite(
         code_hash=registration_invite_hash(raw_code),

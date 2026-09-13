@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -10,8 +10,6 @@ from fastapi.security import HTTPAuthorizationCredentials
 from app.api.deps import authenticated_user_id
 from app.core.config import settings
 from app.core.security import create_access_token, decode_access_token
-from app.models.auth_session import AuthSession
-from app.models.user import User
 
 
 def _credentials(user_id, session_id, **token_options):
@@ -40,7 +38,7 @@ class AuthenticatedSession:
         self.session_id = session_id
         self.session_user_id = session_user_id or user_id
         self.session_expires_at = session_expires_at or (
-            datetime.now(timezone.utc) + timedelta(minutes=5)
+            datetime.now(UTC) + timedelta(minutes=5)
         )
         self.user_exists = user_exists
         self.session_exists = session_exists
@@ -171,7 +169,7 @@ def test_database_session_expiration_is_enforced() -> None:
             AuthenticatedSession(
                 user_id=user_id,
                 session_id=session_id,
-                session_expires_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                session_expires_at=datetime.now(UTC) - timedelta(seconds=1),
             ),
         )
 
@@ -181,7 +179,7 @@ def test_database_session_expiration_is_enforced() -> None:
 def test_access_token_uses_configured_expiration(monkeypatch) -> None:
     user_id = uuid4()
     session_id = uuid4()
-    issued_after = datetime.now(timezone.utc)
+    issued_after = datetime.now(UTC)
     monkeypatch.setattr(settings, "access_token_expire_minutes", 15)
 
     token = create_access_token(user_id, session_id)
@@ -193,18 +191,18 @@ def test_access_token_uses_configured_expiration(monkeypatch) -> None:
         issuer=settings.auth_token_issuer,
     )
 
-    expires_at = datetime.fromtimestamp(payload["exp"], timezone.utc)
+    expires_at = datetime.fromtimestamp(payload["exp"], UTC)
     assert payload["sub"] == str(user_id)
     assert payload["jti"] == str(session_id)
     assert payload["iss"] == settings.auth_token_issuer
     assert payload["aud"] == settings.auth_token_audience
     assert payload["token_type"] == "access"
     assert issued_after + timedelta(minutes=15) - timedelta(seconds=1) <= expires_at
-    assert expires_at <= datetime.now(timezone.utc) + timedelta(minutes=15)
+    assert expires_at <= datetime.now(UTC) + timedelta(minutes=15)
 
 
 def test_expired_bearer_token_is_rejected_before_user_lookup() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     token = create_access_token(
         uuid4(),
         uuid4(),
@@ -229,7 +227,7 @@ def test_legacy_token_without_session_claims_is_rejected() -> None:
     token = jwt.encode(
         {
             "sub": str(uuid4()),
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
         },
         settings.auth_secret_key,
         algorithm="HS256",
@@ -242,7 +240,7 @@ def test_legacy_token_without_session_claims_is_rejected() -> None:
 def test_wrong_audience_and_token_type_are_rejected() -> None:
     user_id = uuid4()
     session_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     base_payload = {
         "sub": str(user_id),
         "jti": str(session_id),

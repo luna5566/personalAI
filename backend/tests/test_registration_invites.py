@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -18,7 +18,7 @@ class FakeLimiter:
 
     def consume(self, db, *, client_host):
         self.hosts.append(client_host)
-        return None
+        return
 
 
 class InviteLookupSession:
@@ -92,7 +92,7 @@ def test_invite_hash_is_keyed_and_does_not_contain_raw_code() -> None:
 
 
 def test_create_invite_only_persists_hash_and_expiration() -> None:
-    now = datetime(2026, 7, 17, 12, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     db = InviteCreationSession()
 
     created = create_registration_invite(
@@ -117,7 +117,7 @@ def test_registration_atomically_marks_valid_invite_used(monkeypatch) -> None:
     invite = SimpleNamespace(
         used_at=None,
         revoked_at=None,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
     )
     db = InviteRegistrationSession(invite)
     limiter = FakeLimiter()
@@ -125,7 +125,7 @@ def test_registration_atomically_marks_valid_invite_used(monkeypatch) -> None:
         id="00000000-0000-0000-0000-000000000001",
         email="invitee@example.com",
         name="Invitee",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     monkeypatch.setattr(auth_service, "hash_password", lambda password: "hash")
     monkeypatch.setattr(
@@ -177,19 +177,19 @@ def test_missing_invite_is_rejected_after_rate_limit_before_lookup() -> None:
     "invite",
     [
         SimpleNamespace(
-            used_at=datetime.now(timezone.utc),
+            used_at=datetime.now(UTC),
             revoked_at=None,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         ),
         SimpleNamespace(
             used_at=None,
             revoked_at=None,
-            expires_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+            expires_at=datetime.now(UTC) - timedelta(seconds=1),
         ),
         SimpleNamespace(
             used_at=None,
-            revoked_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            revoked_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         ),
         None,
     ],

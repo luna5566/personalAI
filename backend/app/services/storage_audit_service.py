@@ -17,7 +17,6 @@ from app.models.storage_deletion import StorageDeletion
 from app.services import storage_deletion_service
 from app.storage import storage_service
 
-
 _EXPECTED_KEY_UPSERT_SQL = """
     INSERT INTO expected_keys (storage_key, referenced, pending_deletion)
     VALUES (?, ?, ?)

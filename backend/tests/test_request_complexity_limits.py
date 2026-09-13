@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 
 from app.api.deps import authenticated_user_id, db_session
 from app.api.routes.documents import router as documents_router

@@ -10,7 +10,6 @@ from app.models.auth_login_attempt import AuthLoginAttempt
 from app.models.auth_session import AuthSession
 from app.models.job import Job, JobStatus
 
-
 TERMINAL_JOB_STATUSES = (
     JobStatus.SUCCESS.value,
     JobStatus.FAILED.value,

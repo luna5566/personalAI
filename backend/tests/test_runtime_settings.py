@@ -1,10 +1,10 @@
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
 import os
-from pathlib import Path
-from types import SimpleNamespace
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
@@ -179,7 +179,7 @@ def test_openai_compatible_provider_requires_api_key() -> None:
     previous_key = settings.llm_api_key
     settings.llm_api_key = None
     try:
-        with pytest.raises(ValueError, match="LLM.*API Key"):
+        with pytest.raises(ValueError, match=r"LLM.*API Key"):
             settings_service.update_runtime_settings(
                 RuntimeSettingsUpdate(
                     llm_provider="openai_compatible",
@@ -199,7 +199,7 @@ def test_cannot_clear_key_for_enabled_openai_provider() -> None:
     settings.ocr_provider = "openai_compatible"
     settings.ocr_api_key = "configured"
     try:
-        with pytest.raises(ValueError, match="OCR.*API Key"):
+        with pytest.raises(ValueError, match=r"OCR.*API Key"):
             settings_service.update_runtime_settings(
                 RuntimeSettingsUpdate(
                     llm_provider="local_extractive",
@@ -426,7 +426,7 @@ def test_runtime_settings_database_failure_is_recoverable_and_not_dispatched(
 
 
 def test_manual_global_rebuild_is_admin_only_and_covers_all_users(monkeypatch) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     job = SimpleNamespace(
         id=uuid4(),
         user_id=settings.runtime_settings_admin_user_id,

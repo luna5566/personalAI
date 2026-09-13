@@ -1,0 +1,36 @@
+# 规则集固定声明，不跟随 ruff 版本默认值漂移。
+# BLE001：后台 worker 按设计捕获宽异常并落盘为公开错误（决策 87/88），不启用。
+# B008：FastAPI 的 Depends()/Query() 约定写在参数默认值里。
+# TRY004/RUF012：与 Pydantic 模型和命名业务异常的既有风格冲突。
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = [
+    "E4",  # pycodestyle imports/indentation subset
+    "E7",
+    "E9",
+    "F",   # pyflakes
+    "I",   # isort
+    "UP017", # datetime.timezone.utc -> datetime.UTC
+    "UP012", # unnecessary encode("utf-8")
+    "UP035", # deprecated typing imports
+    "B",   # bugbear
+    "RET", # return style
+    "SIM", # simplify
+    "RUF", # ruff-specific
+]
+ignore = [
+    "BLE001",
+    "B008",
+    "B905", # zip() 用于内部等长序列，strict 语义已由调用方保证
+    "TRY004",
+    "RUF012",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[lint.per-file-ignores]
+# 测试允许断言辅助函数式写法和宽松返回
+"tests/*" = ["RET504"]

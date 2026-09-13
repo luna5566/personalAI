@@ -9,7 +9,6 @@ from app.models.message import Message
 from app.services import (
     chat_service,
     document_service,
-    registration_invite_admin_service,
     tag_service,
 )
 

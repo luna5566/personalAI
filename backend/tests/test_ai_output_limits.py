@@ -250,11 +250,12 @@ def test_provider_output_limit_has_a_stable_502_response(
             "consume",
             lambda *args, **kwargs: None,
         )
-        call = lambda: chat_routes.query(
-            ChatQueryRequest(question="问题"),
-            MagicMock(),
-            uuid4(),
-        )
+        def call() -> None:
+            chat_routes.query(
+                ChatQueryRequest(question="问题"),
+                MagicMock(),
+                uuid4(),
+            )
     else:
         monkeypatch.setattr(
             organize_routes.organize_service,
@@ -266,11 +267,12 @@ def test_provider_output_limit_has_a_stable_502_response(
             "consume",
             lambda *args, **kwargs: None,
         )
-        call = lambda: organize_routes.organize_document(
-            OrganizeDocumentRequest(document_id=uuid4()),
-            MagicMock(),
-            uuid4(),
-        )
+        def call() -> None:
+            organize_routes.organize_document(
+                OrganizeDocumentRequest(document_id=uuid4()),
+                MagicMock(),
+                uuid4(),
+            )
 
     with pytest.raises(HTTPException) as captured:
         call()

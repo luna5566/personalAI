@@ -1,10 +1,10 @@
-from dataclasses import dataclass
-from datetime import datetime
 import logging
 import threading
+from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, load_only
 
 from app.core.config import settings

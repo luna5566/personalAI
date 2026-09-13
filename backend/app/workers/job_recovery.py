@@ -4,16 +4,17 @@ import asyncio
 import logging
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from time import monotonic
 from uuid import UUID, uuid4
 
-from sqlalchemy import and_, or_, select, text
+from sqlalchemy import and_, func, or_, select, text
 
 from app.core.config import settings
 from app.core.database import SessionLocal, set_local_statement_timeout
-from app.models.job import Job, JobStatus, JobType
+from app.core.observability import job_queue_depth
 from app.models.document import Document, DocumentStatus
+from app.models.job import Job, JobStatus, JobType
 from app.services import (
     embedding_configuration_service,
     job_service,
@@ -26,6 +27,33 @@ logger = logging.getLogger(__name__)
 RECOVERABLE_JOB_STATUS_PREDICATE = text(
     "jobs.status IN ('pending', 'cancel_requested', 'running')"
 )
+JOB_STATUS_VALUES = tuple(status.value for status in JobStatus)
+
+
+def update_job_queue_depth(db) -> None:
+    """把按状态分组的任务计数写入 Prometheus gauge。"""
+    rows = db.execute(select(Job.status, func.count()).group_by(Job.status)).all()
+    counts = {status: 0 for status in JOB_STATUS_VALUES}
+    for status, count in rows:
+        if status in counts:
+            counts[status] = int(count)
+    for status, count in counts.items():
+        job_queue_depth.labels(status=status).set(count)
+
+
+def record_job_queue_depth() -> None:
+    """周期采集任务队列深度；失败只记录日志，不影响恢复调度。"""
+    if not settings.metrics_enabled:
+        return
+    try:
+        with SessionLocal() as db:
+            set_local_statement_timeout(
+                db,
+                settings.job_recovery_statement_timeout_seconds,
+            )
+            update_job_queue_depth(db)
+    except Exception:
+        logger.debug("Recording job queue depth failed", exc_info=True)
 
 
 @dataclass(frozen=True)
@@ -61,13 +89,13 @@ class JobRecoveryState:
         self._active_workers = 0
 
     def record_scan_started(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             self._scan_started_at = now
             self._scan_started_monotonic = monotonic()
 
     def record_success(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             self._finish_scan()
             self._last_scan_at = now
@@ -75,7 +103,7 @@ class JobRecoveryState:
             self._consecutive_failures = 0
 
     def record_failure(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             self._finish_scan()
             self._last_scan_at = now
@@ -170,7 +198,7 @@ def claim_recoverable_jobs(limit: int | None = None) -> list[RecoverableJob]:
     )
     if claim_limit == 0:
         return []
-    stale_before = datetime.now(timezone.utc) - timedelta(minutes=settings.stale_job_after_minutes)
+    stale_before = datetime.now(UTC) - timedelta(minutes=settings.stale_job_after_minutes)
     with SessionLocal() as db:
         set_local_statement_timeout(
             db,
@@ -273,6 +301,7 @@ async def schedule_recoverable_jobs(
 ) -> list[asyncio.Task[None]]:
     if run_maintenance:
         await asyncio.to_thread(maintenance_service.purge_expired_data)
+    record_job_queue_depth()
 
     reserved_slots = settings.job_recovery_batch_size
     if state is not None:

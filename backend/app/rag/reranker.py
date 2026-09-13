@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import replace
 import re
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from dataclasses import replace
+from typing import TypeVar
 from uuid import UUID
 
 T = TypeVar("T")
@@ -14,7 +15,7 @@ def rerank_chunks(query: str, chunks: Sequence[T], top_k: int) -> list[T]:
 
     terms = _terms(query)
     rescored = [_with_rerank_score(chunk, terms, query) for chunk in chunks]
-    candidates = sorted(rescored, key=lambda item: getattr(item, "score"), reverse=True)
+    candidates = sorted(rescored, key=lambda item: item.score, reverse=True)
 
     selected: list[T] = []
     document_counts: dict[UUID, int] = {}
@@ -25,14 +26,14 @@ def rerank_chunks(query: str, chunks: Sequence[T], top_k: int) -> list[T]:
         )
         item = candidates.pop(best_index)
         selected.append(item)
-        document_id = getattr(item, "document_id")
+        document_id = item.document_id
         document_counts[document_id] = document_counts.get(document_id, 0) + 1
 
     return selected
 
 
 def _with_rerank_score(chunk: T, terms: list[str], query: str) -> T:
-    base_score = float(getattr(chunk, "score"))
+    base_score = float(chunk.score)
     text = _chunk_text(chunk)
     title = str(getattr(chunk, "document_title", "")).lower()
 
@@ -46,9 +47,9 @@ def _with_rerank_score(chunk: T, terms: list[str], query: str) -> T:
 
 
 def _diversified_score(chunk: T, document_counts: dict[UUID, int]) -> float:
-    document_id = getattr(chunk, "document_id")
+    document_id = chunk.document_id
     crowding_penalty = min(document_counts.get(document_id, 0), 3) * 0.035
-    return float(getattr(chunk, "score")) - crowding_penalty
+    return float(chunk.score) - crowding_penalty
 
 
 def _coverage_score(terms: list[str], text: str) -> float:

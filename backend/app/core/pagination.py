@@ -2,10 +2,9 @@ import base64
 import binascii
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
-
 
 MAX_PAGE_SIZE = 100
 MAX_OFFSET_ROWS = 100_000
@@ -49,7 +48,7 @@ def encode_timestamp_id_cursor(kind: str, cursor: TimestampIdCursor) -> str:
     return _encode_cursor(
         kind,
         [
-            timestamp.astimezone(timezone.utc).isoformat(timespec="microseconds"),
+            timestamp.astimezone(UTC).isoformat(timespec="microseconds"),
             str(cursor.id),
         ],
     )
@@ -69,7 +68,7 @@ def decode_timestamp_id_cursor(
     if timestamp.tzinfo is None or timestamp.utcoffset() is None:
         raise PaginationError(INVALID_CURSOR_MESSAGE)
     return TimestampIdCursor(
-        timestamp=timestamp.astimezone(timezone.utc),
+        timestamp=timestamp.astimezone(UTC),
         id=cursor_id,
     )
 

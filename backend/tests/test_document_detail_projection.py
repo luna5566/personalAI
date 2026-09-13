@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -41,7 +41,7 @@ def test_document_detail_selects_one_canonical_content_and_no_internal_payload()
 
 
 def test_document_detail_view_serializes_only_canonical_content() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     view = document_service.DocumentDetailView(
         id=uuid4(),
         user_id=uuid4(),
@@ -80,7 +80,7 @@ def test_document_detail_view_serializes_only_canonical_content() -> None:
 
 
 def test_document_detail_schema_rejects_content_larger_than_one_window() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     with pytest.raises(ValidationError):
         DocumentRead.model_validate(
@@ -107,7 +107,7 @@ def test_document_detail_schema_rejects_content_larger_than_one_window() -> None
 
 
 def test_in_memory_detail_prefers_cleaned_content_and_bounds_diagnostics() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     document = SimpleNamespace(
         id=uuid4(),
         user_id=uuid4(),
@@ -138,7 +138,7 @@ def test_in_memory_detail_prefers_cleaned_content_and_bounds_diagnostics() -> No
 
 
 def test_in_memory_detail_returns_bounded_content_windows() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     body = "a" * DOCUMENT_DETAIL_CONTENT_PAGE_MAX_LENGTH + "结尾内容"
     document = SimpleNamespace(
         id=uuid4(),

@@ -104,6 +104,10 @@ class Settings(BaseSettings):
     embedding_dimensions: int = Field(default=DATABASE_VECTOR_DIMENSIONS, ge=DATABASE_VECTOR_DIMENSIONS, le=DATABASE_VECTOR_DIMENSIONS)
     hnsw_ef_search: int = Field(default=100, ge=1, le=1000)
     hnsw_max_scan_tuples: int = Field(default=20000, ge=1, le=1_000_000)
+    # Number of chunks retrieved per chat query before context building.
+    chat_retrieval_top_k: int = Field(default=8, ge=1, le=50)
+    # Minimum similarity score for a retrieved chunk to enter the context.
+    retrieval_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
 
     storage_root: Path = Path("storage_data")
     storage_backend: str = "local"
@@ -159,6 +163,9 @@ class Settings(BaseSettings):
     rerank_model: str = "rerank-v3.5"
 
     metrics_enabled: bool = True
+    # None 表示跟随环境：local/test 放开，其它环境默认只允许回环访问 /metrics。
+    # 部署在反向代理之后时应显式设为 false，并改由代理层保护该端点。
+    metrics_require_local: bool | None = None
     log_format: str = "text"
 
     model_config = SettingsConfigDict(
@@ -177,6 +184,12 @@ class Settings(BaseSettings):
     def registration_invite_required(self) -> bool:
         if self.auth_registration_invite_required is not None:
             return self.auth_registration_invite_required
+        return self.app_env.strip().casefold() not in LOCAL_AUTH_ENVIRONMENTS
+
+    @property
+    def enforce_metrics_loopback(self) -> bool:
+        if self.metrics_require_local is not None:
+            return self.metrics_require_local
         return self.app_env.strip().casefold() not in LOCAL_AUTH_ENVIRONMENTS
 
     @model_validator(mode="after")

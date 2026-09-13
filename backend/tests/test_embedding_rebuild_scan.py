@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -42,7 +42,7 @@ class ScanSession:
 
 def test_rebuild_scan_uses_bounded_stable_keyset_batches() -> None:
     user_id = uuid4()
-    created_before = datetime(2026, 7, 18, 12, tzinfo=timezone.utc)
+    created_before = datetime(2026, 7, 18, 12, tzinfo=UTC)
     first_row = SimpleNamespace(
         user_id=user_id,
         created_at=created_before - timedelta(minutes=3),
@@ -106,7 +106,7 @@ def test_rebuild_count_uses_the_same_status_owner_and_snapshot_filters() -> None
     db = MagicMock()
     db.scalar.return_value = 42
     user_id = uuid4()
-    created_before = datetime.now(timezone.utc)
+    created_before = datetime.now(UTC)
 
     assert document_pipeline._count_rebuild_documents(
         db,
@@ -130,7 +130,7 @@ def test_rebuild_count_uses_the_same_status_owner_and_snapshot_filters() -> None
 
 def test_rebuild_document_is_rechecked_before_being_yielded() -> None:
     user_id = uuid4()
-    created_before = datetime.now(timezone.utc)
+    created_before = datetime.now(UTC)
     row = SimpleNamespace(
         user_id=user_id,
         created_at=created_before - timedelta(seconds=1),
@@ -162,7 +162,7 @@ def test_rebuild_scan_rejects_invalid_batch_size_before_sql(batch_size) -> None:
             document_pipeline._iter_rebuild_documents(
                 db,
                 user_id=None,
-                created_before=datetime.now(timezone.utc),
+                created_before=datetime.now(UTC),
                 batch_size=batch_size,
             )
         )

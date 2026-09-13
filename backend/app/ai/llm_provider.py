@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Iterator
-import re
 from typing import Any
 
 from app.ai.http_client import iter_openai_chat_completion_deltas, post_json_limited

@@ -6,10 +6,10 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
-from starlette.exceptions import HTTPException
-from starlette.requests import Request
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
+from starlette.exceptions import HTTPException
+from starlette.requests import Request
 
 from app.core.exceptions import (
     DATABASE_UNAVAILABLE_MESSAGE,

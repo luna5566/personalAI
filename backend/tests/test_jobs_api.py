@@ -1,5 +1,5 @@
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -81,7 +81,7 @@ def test_job_indexes_cover_recovery_and_default_history_order() -> None:
 
 
 def test_job_response_does_not_expose_configuration_fingerprint() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     job = SimpleNamespace(
         id=uuid4(),
         user_id=uuid4(),
@@ -114,7 +114,7 @@ def test_job_response_rejects_text_beyond_public_bounds(
     field: str,
     length: int,
 ) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     values = {
         "id": uuid4(),
         "user_id": uuid4(),

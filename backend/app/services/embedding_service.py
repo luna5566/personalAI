@@ -4,15 +4,13 @@ from array import array
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import delete
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.ai.embedding_provider import EmbeddingProvider, get_embedding_provider
 from app.models.chunk import DocumentChunk
 from app.models.document import Document, DocumentStatus
 from app.models.embedding import ChunkEmbedding
-
 
 EMBEDDING_SPOOL_MEMORY_BYTES = 8 * 1024 * 1024
 _FLOAT_ARRAY_ITEM_BYTES = array("f").itemsize

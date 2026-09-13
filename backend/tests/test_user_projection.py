@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -49,7 +49,7 @@ def test_account_deletion_user_lock_excludes_public_profile_payload() -> None:
 
 
 def test_user_read_bounds_legacy_avatar_in_memory() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     source = SimpleNamespace(
         id=uuid4(),
         email="user@example.com",
@@ -69,5 +69,5 @@ def test_user_read_schema_rejects_avatar_over_public_limit() -> None:
             id=uuid4(),
             email="user@example.com",
             avatar_url="x" * (USER_AVATAR_URL_MAX_LENGTH + 1),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )

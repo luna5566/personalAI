@@ -10,7 +10,6 @@ from pathlib import Path
 from app.ai.http_client import post_json_limited
 from app.core.config import settings
 
-
 OCR_BASE64_INPUT_CHUNK_BYTES = 57 * 1024
 _OCR_BASE64_MARKER = "__PERSONAL_AI_OCR_IMAGE_BASE64__"
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -43,7 +43,7 @@ def list_registration_invites(
 ) -> RegistrationInvitePageRead:
     ensure_registration_invite_admin(user_id)
     offset = offset_for_page(page, page_size)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     conditions = _status_conditions(invite_status, now)
     total = db.scalar(
         select(func.count(AuthRegistrationInvite.id)).where(*conditions)
@@ -77,7 +77,7 @@ def create_managed_registration_invite(
         db,
         valid_for=timedelta(hours=valid_hours),
     )
-    invite_read = _invite_read(created.invite, datetime.now(timezone.utc))
+    invite_read = _invite_read(created.invite, datetime.now(UTC))
     return RegistrationInviteCreatedRead(
         **invite_read.model_dump(),
         code=created.code,
@@ -101,7 +101,7 @@ def revoke_registration_invite(
     if invite.revoked_at is not None:
         db.commit()
         return
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if invite.used_at is not None or invite.expires_at <= now:
         raise RegistrationInviteNotRevocableError("已使用或已过期的邀请码不能撤销")
     invite.revoked_at = now

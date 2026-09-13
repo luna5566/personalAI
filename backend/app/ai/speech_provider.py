@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import mimetypes
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 from app.ai.http_client import post_json_limited

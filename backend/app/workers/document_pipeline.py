@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select, text, tuple_
@@ -8,10 +8,8 @@ from sqlalchemy.engine import Connection
 
 from app.core.database import SessionLocal, engine
 from app.models.chunk import DocumentChunk
-from app.models.document import Document
-from app.models.document import DocumentStatus
-from app.models.job import Job
-from app.models.job import JobStatus
+from app.models.document import Document, DocumentStatus
+from app.models.job import Job, JobStatus
 from app.services import (
     chunking_service,
     document_service,
@@ -441,7 +439,7 @@ def rebuild_embeddings(
                 )
             provider = embedding_service.get_embedding_provider()
             job_service.raise_if_job_stopped(db, job_id, execution_token)
-            scan_started_at = datetime.now(timezone.utc)
+            scan_started_at = datetime.now(UTC)
             total = _count_rebuild_documents(
                 db,
                 user_id=user_id,

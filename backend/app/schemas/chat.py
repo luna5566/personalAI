@@ -12,18 +12,17 @@ from pydantic import (
 )
 
 from app.core.request_limits import (
+    CHAT_ANSWER_MAX_LENGTH,
     CHAT_CITATION_LIMIT,
     CHAT_CITATION_TEXT_MAX_LENGTH,
     CHAT_SCOPE_DOCUMENT_LIMIT,
     CHAT_SCOPE_SOURCE_TYPE_LIMIT,
     CHAT_SCOPE_TAG_LIMIT,
-    CHAT_ANSWER_MAX_LENGTH,
     DOCUMENT_TITLE_MAX_LENGTH,
     MESSAGE_LIST_CONTENT_PREVIEW_MAX_LENGTH,
     TAG_NAME_MAX_LENGTH,
 )
 from app.models.document import DocumentSourceType
-
 
 ChatScopeTagName = Annotated[
     str,

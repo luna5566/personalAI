@@ -1,9 +1,9 @@
 from pathlib import Path
 from uuid import UUID
 
-import app.models  # noqa: F401
 import pytest
 
+import app.models  # noqa: F401
 from app.core.config import settings
 from app.core.database import Base
 from app.models.document import Document, DocumentSourceType

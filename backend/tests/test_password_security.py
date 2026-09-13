@@ -1,7 +1,7 @@
 import hashlib
 
-from argon2 import PasswordHasher, Type
 import pytest
+from argon2 import PasswordHasher, Type
 
 from app.core.security import (
     ARGON2_MEMORY_COST_KIB,

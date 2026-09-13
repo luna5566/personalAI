@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -6,9 +6,11 @@ from fastapi import Response, status
 
 from app.api.routes import health
 from app.core.database import DatabasePoolSnapshot
+from app.services.storage_deletion_service import (
+    StorageDeletionBatchResult,
+    StorageDeletionQueueSnapshot,
+)
 from app.workers.job_recovery import JobRecoveryState
-from app.services.storage_deletion_service import StorageDeletionBatchResult
-from app.services.storage_deletion_service import StorageDeletionQueueSnapshot
 from app.workers.storage_deletion import StorageDeletionState
 
 
@@ -30,7 +32,7 @@ class ReadySession:
 
     def execute(self, statement, parameters=None):
         self.executions.append((statement, parameters))
-        return None
+        return
 
 
 @pytest.fixture(autouse=True)
@@ -528,7 +530,7 @@ def test_readiness_returns_503_when_recovery_scan_is_overdue(monkeypatch) -> Non
     request = recovery_request()
     recovery_state = request.app.state.job_recovery_state
     recovery_state.record_scan_started()
-    recovery_state._scan_started_at = datetime.now(timezone.utc) - timedelta(
+    recovery_state._scan_started_at = datetime.now(UTC) - timedelta(
         seconds=6
     )
     response = Response()
@@ -556,7 +558,7 @@ def test_readiness_returns_503_when_recovery_success_is_stale(monkeypatch) -> No
     )
     request = recovery_request()
     recovery_state = request.app.state.job_recovery_state
-    recovery_state._last_success_at = datetime.now(timezone.utc) - timedelta(
+    recovery_state._last_success_at = datetime.now(UTC) - timedelta(
         seconds=31
     )
     response = Response()

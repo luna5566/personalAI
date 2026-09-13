@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from uuid import UUID
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -14,8 +13,8 @@ from app.core.security import (
     password_needs_rehash,
     verify_password,
 )
-from app.models.auth_session import AuthSession
 from app.models.auth_registration_invite import AuthRegistrationInvite
+from app.models.auth_session import AuthSession
 from app.models.chunk import DocumentChunk
 from app.models.conversation import Conversation
 from app.models.document import Document
@@ -41,7 +40,6 @@ from app.services.login_rate_limit_service import (
     registration_rate_limiter,
 )
 from app.services.registration_invite_service import registration_invite_hash
-
 
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-user-password")
 
@@ -133,7 +131,7 @@ def register(
         db.flush()
         access_token = _issue_access_token(db, user, client_name=client_name)
         if invite is not None:
-            invite.used_at = datetime.now(timezone.utc)
+            invite.used_at = datetime.now(UTC)
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -157,7 +155,7 @@ def _lock_valid_registration_invite(
         )
         .with_for_update()
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if (
         invite is None
         or invite.used_at is not None
@@ -429,7 +427,7 @@ def list_sessions(
     user_id: UUID,
     current_session_id: UUID,
 ) -> list[AuthSessionRead]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     sessions = db.scalars(
         select(AuthSession)
         .where(
@@ -546,7 +544,7 @@ def _issue_access_token(
     *,
     client_name: str | None = None,
 ) -> str:
-    now = datetime.now(timezone.utc).replace(microsecond=0)
+    now = datetime.now(UTC).replace(microsecond=0)
     expires_at = now + timedelta(minutes=settings.access_token_expire_minutes)
 
     locked_user_id = db.scalar(

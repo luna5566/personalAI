@@ -1,7 +1,7 @@
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 import hashlib
 import hmac
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from math import ceil
 from uuid import UUID
 
@@ -44,7 +44,7 @@ class RateLimitRule:
 
 
 def login_scope_hash(scope: str, value: str, secret_key: str) -> str:
-    message = f"{scope}:{value}".encode("utf-8")
+    message = f"{scope}:{value}".encode()
     return hmac.new(secret_key.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 

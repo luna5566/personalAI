@@ -1,0 +1,2 @@
+{"question": "示例：这份资料的核心结论是什么？", "expected_document_ids": ["00000000-0000-0000-0000-0000000000aa"]}
+{"question": "示例：包含'向量检索'这一主题的资料", "expected_keywords": ["向量检索", "pgvector"]}
