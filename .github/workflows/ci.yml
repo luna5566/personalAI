@@ -37,6 +37,10 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
+      - name: Audit dependencies
+        run: |
+          pip install -q pip-audit
+          pip-audit -r requirements.txt --desc off
       - name: Lint
         run: python -m ruff check app tests scripts
       - name: Compile check
@@ -80,3 +84,70 @@ jobs:
         run: flutter test
       - name: Build web
         run: flutter build web --release
+
+  docker-smoke:
+    name: Docker image smoke tests
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: personal_ai
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d personal_ai"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t personal-ai-backend:smoke ./backend
+      - name: Build web image
+        run: docker build -t personal-ai-web:smoke ./mobile
+      - name: Verify web runtime config injection
+        run: |
+          docker run -d --name web-smoke -p 8080:80 \
+            -e API_BASE_URL=http://smoke.example/api \
+            personal-ai-web:smoke
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/ > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/ | grep -q "<title>"
+          curl -fsS http://127.0.0.1:8080/env.js | grep -q "http://smoke.example/api"
+          echo "env.js injection verified"
+      - name: Start backend container against pgvector
+        run: |
+          docker run -d --name api-smoke --network host \
+            -e APP_ENV=local \
+            -e DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/personal_ai \
+            -e AUTH_SECRET_KEY=smoke-test-secret-key-with-32-bytes-minimum \
+            personal-ai-backend:smoke
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/health || true)
+            if [ "$code" = "200" ]; then echo "healthy"; exit 0; fi
+            sleep 2
+          done
+          docker logs api-smoke
+          exit 1
+      - name: Verify readiness and metrics
+        run: |
+          curl -fsS http://127.0.0.1:8000/api/health/ready | grep -q '"status"'
+          curl -fsS http://127.0.0.1:8000/api/metrics | grep -m1 "http_requests_total"
+          echo "backend smoke verified"
+      - name: Print container logs on failure
+        if: failure()
+        run: |
+          docker logs api-smoke || true
+          docker logs web-smoke || true
+      - name: Clean up containers
+        if: always()
+        run: |
+          docker rm -f api-smoke || true
+          docker rm -f web-smoke || true

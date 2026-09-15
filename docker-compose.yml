@@ -1,5 +1,13 @@
+# 每个服务限 3 个 10MB 日志文件，防止长期运行撑爆磁盘
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
+    logging: *default-logging
     image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
@@ -19,6 +27,7 @@ services:
       retries: 12
 
   api:
+    logging: *default-logging
     build:
       context: ./backend
     restart: unless-stopped
@@ -60,6 +69,7 @@ services:
       start_period: 40s
 
   web:
+    logging: *default-logging
     build:
       context: ./mobile
     restart: unless-stopped
@@ -75,6 +85,37 @@ services:
       api:
         condition: service_healthy
 
+  prometheus:
+    # 镜像用 latest：Docker Hub 在部分网络不可达，首次拉取后建议改成具体 tag
+    image: prom/prometheus:latest
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    logging: *default-logging
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: personal-ai
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3300:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   personal_ai_pgdata:
   personal_ai_storage:
+  prometheus_data:
+  grafana_data:

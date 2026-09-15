@@ -102,6 +102,17 @@ Windows 构建含插件的桌面应用前需要启用 Developer Mode。
 
 命中判定、跳过规则（如期望资料不在库中）见脚本头部说明。`--min-recall` 可作为换模型时的门禁。
 
+### 检索延迟基准
+
+评估大知识库下的检索吞吐（离线 local_hash 向量，HNSW 行为与生产一致）：
+
+```powershell
+.venv\Scripts\python scriptsench_retrieval.py                          # 默认 500 篇 / 50 次查询
+.venv\Scripts\python scriptsench_retrieval.py --documents 2000 --ef-search 40
+```
+
+输出 chunk 总量与每查询 P50/P90/P99 延迟，可对比 HNSW 参数；语料基准结束后自动清理。
+
 CI 已内置同样的门禁：`seed_eval_documents.py` 播种 15 篇固定语料，`retrieval_eval_set.ci.jsonl` 是对应评测集，每次 CI 运行 `eval_retrieval.py --min-recall 0.8`，检索链路回归会在流水线上直接失败。本地复现：
 
 ```powershell
@@ -129,6 +140,18 @@ flutter build apk --release
 - `GET /api/metrics`：Prometheus 指标（HTTP 请求计数/时延按路由模板，AI Provider 出站调用按域名，任务队列深度按状态）。可用 `METRICS_ENABLED=false` 关闭；公网部署时应通过网络策略限制访问。
 - 请求追踪：每个响应带 `X-Request-ID`，客户端可传入同名请求头串联链路。
 - 结构化日志：设置 `LOG_FORMAT=json` 输出 JSON 日志（含 `request_id`），默认人类可读格式。
+
+## 监控面板（可选）
+
+`docker-compose.yml` 内置可选监控栈（`monitoring` profile，不影响默认启动）：
+
+```powershell
+docker compose --profile monitoring up -d
+# Grafana: http://127.0.0.1:3300 （admin / personal-ai）
+# Prometheus: http://127.0.0.1:9090
+```
+
+数据源和「请求速率 / P95 延迟 / 任务队列深度 / AI Provider 调用」面板已自动预置。监控镜像使用 latest，首次拉取后建议在 compose 里改成具体版本号。生产环境若开启 `METRICS_REQUIRE_LOCAL`，需将 Prometheus 改为宿主机网络采集。
 
 ## 备份与恢复
 

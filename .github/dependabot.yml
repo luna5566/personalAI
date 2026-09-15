@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Python 依赖（backend/requirements.txt，>= 语义化约束）
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+  # Flutter 依赖
+  - package-ecosystem: "pub"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+  # CI 使用的 Action 版本
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # backend 基础镜像（python:3.12-slim）
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+  # mobile 的 Flutter 基础镜像不纳入自动更新：
+  # cirruslabs/flutter 版本必须与本地/CI 的 Dart 版本对齐（见决策 143），
+  # 升级需要三端一起动，不能只 bump 镜像 tag。
