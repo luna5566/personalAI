@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.llm_provider import LLMProvider, get_llm_provider
 from app.ai.output_validation import validate_provider_text_length
+from app.core.config import settings
 from app.core.request_limits import (
     DOCUMENT_SUMMARY_MAX_LENGTH,
     DOCUMENT_TAG_LIMIT,
@@ -27,6 +28,9 @@ from app.services.job_error_service import (
 
 AUTO_TAG_LIMIT = 5
 ENRICHMENT_CHUNK_LIMIT = 8
+# 离线抽取式模型只会从原文截片段落，当标签全是无意义碎片，
+# 因此本地开发 provider 跳过自动标签（摘要保留用于演示）。
+LOCAL_EXTRACTIVE_LLM_PROVIDER = "local_extractive"
 
 
 logger = logging.getLogger(__name__)
@@ -85,17 +89,21 @@ def generate_document_enrichment(
         raise EnrichmentProviderError("资料没有可用于摘要的文本内容")
 
     provider = provider or get_llm_provider()
+    skip_auto_tags = settings.llm_provider == LOCAL_EXTRACTIVE_LLM_PROVIDER
     try:
         summary = validate_provider_text_length(
             provider.organize_with_context("summary", context),
             max_length=DOCUMENT_SUMMARY_MAX_LENGTH,
             output_name="document summary",
         ).strip()
-        tag_output = validate_provider_text_length(
-            provider.organize_with_context("tags", context),
-            max_length=ENRICHMENT_TAG_OUTPUT_MAX_LENGTH,
-            output_name="document tag output",
-        ).strip()
+        if skip_auto_tags:
+            tag_output = ""
+        else:
+            tag_output = validate_provider_text_length(
+                provider.organize_with_context("tags", context),
+                max_length=ENRICHMENT_TAG_OUTPUT_MAX_LENGTH,
+                output_name="document tag output",
+            ).strip()
     except Exception as exc:
         logger.warning("Document enrichment provider failed", exc_info=True)
         raise EnrichmentProviderError(
@@ -104,7 +112,7 @@ def generate_document_enrichment(
 
     return GeneratedEnrichment(
         summary=summary or None,
-        tags=_parse_generated_tags(tag_output),
+        tags=[] if skip_auto_tags else _parse_generated_tags(tag_output),
     )
 
 

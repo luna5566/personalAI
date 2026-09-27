@@ -155,3 +155,47 @@ def test_enrichment_does_not_exceed_the_document_tag_limit(monkeypatch) -> None:
     assert generated == []
     assert applied == existing_tags
     assert document.metadata_["auto_tags"] == []
+
+
+def test_local_extractive_provider_skips_auto_tags(monkeypatch) -> None:
+    """离线抽取式模型生成的标签是无意义片段，必须整体跳过。"""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "local_extractive")
+    provider = LocalExtractiveLLMProvider()
+    context = "[资料 1]\n标题：RAG 学习笔记\n位置：片段 1\n片段：向量检索结合关键词检索可以提高召回质量。"
+
+    generated = enrichment_service.generate_document_enrichment(
+        SimpleNamespace(
+            id=uuid4(), title="RAG 学习笔记", cleaned_text=context, summary=None
+        ),
+        [SimpleNamespace(chunk_index=0, content="向量检索结合关键词检索可以提高召回质量。")],
+        provider=provider,
+    )
+
+    assert generated.summary
+    assert generated.tags == []
+
+
+def test_openai_provider_still_generates_auto_tags(monkeypatch) -> None:
+    """真实模型路径不受跳过逻辑影响。"""
+    from app.core.config import settings
+
+    class FakeProvider:
+        def organize_with_context(self, mode: str, context: str) -> str:
+            if mode == "summary":
+                return "摘要内容"
+            return '{"tags":["生物","植物"]}'
+
+    monkeypatch.setattr(settings, "llm_provider", "openai_compatible")
+
+    generated = enrichment_service.generate_document_enrichment(
+        SimpleNamespace(
+            id=uuid4(), title="光合作用", cleaned_text="正文", summary=None
+        ),
+        [SimpleNamespace(chunk_index=0, content="光合作用正文片段。")],
+        provider=FakeProvider(),
+    )
+
+    assert generated.summary == "摘要内容"
+    assert generated.tags == ["生物", "植物"]
