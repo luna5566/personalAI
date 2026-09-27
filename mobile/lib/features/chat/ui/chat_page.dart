@@ -850,7 +850,7 @@ class _MessageBubble extends StatelessWidget {
           children: [
             DecoratedBox(
               decoration: BoxDecoration(
-                color: isUser ? colorScheme.primary : Colors.white,
+                color: isUser ? colorScheme.primary : colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: isUser
                     ? null

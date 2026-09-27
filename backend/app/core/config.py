@@ -108,6 +108,8 @@ class Settings(BaseSettings):
     chat_retrieval_top_k: int = Field(default=8, ge=1, le=50)
     # Minimum similarity score for a retrieved chunk to enter the context.
     retrieval_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
+    # MMR 多样性权重：0 = 纯相关度截断；1.0 = 与相关度等权扣减冗余。
+    retrieval_mmr_lambda: float = Field(default=0.4, ge=0.0, le=1.0)
 
     storage_root: Path = Path("storage_data")
     storage_backend: str = "local"

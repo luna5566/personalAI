@@ -292,7 +292,7 @@ class _HistoryMessageBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 620),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: isUser ? colorScheme.primary : Colors.white,
+            color: isUser ? colorScheme.primary : colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border:
                 isUser ? null : Border.all(color: colorScheme.outlineVariant),

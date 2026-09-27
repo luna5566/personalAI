@@ -19,7 +19,7 @@ from app.models.chunk import DocumentChunk, chunk_search_text_expression
 from app.models.document import Document
 from app.models.embedding import ChunkEmbedding
 from app.models.tag import DocumentTag, Tag
-from app.rag.reranker import rerank_chunks
+from app.rag.reranker import rerank_chunks, select_diverse
 from app.services import tag_service
 from app.utils.sql import escape_like_pattern
 
@@ -116,11 +116,16 @@ def vector_search(
         created_after=created_after,
     )
     merged_results = _merge_results(vector_results, keyword_results)
+    mmr_lambda = settings.retrieval_mmr_lambda
     model_reranked = _apply_model_rerank(query, merged_results, top_k)
     if model_reranked is not None:
-        reranked = model_reranked
+        reranked = select_diverse(
+            model_reranked, top_k, mmr_lambda=mmr_lambda
+        )
     else:
-        reranked = rerank_chunks(query, merged_results, top_k)
+        reranked = rerank_chunks(
+            query, merged_results, top_k, mmr_lambda=mmr_lambda
+        )
     return _filter_relevant_chunks(reranked)
 
 
@@ -129,7 +134,7 @@ def _apply_model_rerank(
     chunks: list[RetrievedChunk],
     top_k: int,
 ) -> list[RetrievedChunk] | None:
-    """模型重排可用时返回按 relevance score 排序的 top_k，否则返回 None 走启发式重排。"""
+    """模型重排可用时返回按 relevance score 排序的候选，否则返回 None 走启发式重排。"""
     if settings.rerank_provider == "disabled" or not chunks:
         return None
     try:
@@ -148,7 +153,8 @@ def _apply_model_rerank(
         if index < len(scores)
     ]
     rescored.sort(key=lambda item: item.score, reverse=True)
-    return rescored[:top_k]
+    # 不在此处截断：外层 select_diverse 需要完整候选做 MMR 多样性选择。
+    return rescored
 
 
 def keyword_search(

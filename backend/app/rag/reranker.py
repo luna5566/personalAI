@@ -40,8 +40,6 @@ def select_diverse(
     抑制同一文档相邻/重叠片段霸占整个上下文。`mmr_lambda=0` 退化为纯
     相关度截断。
     """
-    if top_k >= len(chunks) and mmr_lambda is None:
-        return list(chunks)
     selected: list[T] = []
     document_counts: dict[UUID, int] = {}
     candidates = list(chunks)

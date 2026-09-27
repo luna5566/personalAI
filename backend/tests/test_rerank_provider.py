@@ -62,7 +62,7 @@ def test_model_rerank_disabled_returns_none(monkeypatch) -> None:
     assert _apply_model_rerank("问题", chunks, 2) is None
 
 
-def test_model_rerank_rescores_and_truncates(monkeypatch) -> None:
+def test_model_rerank_rescores_and_sorts_full_candidates(monkeypatch) -> None:
     monkeypatch.setattr(settings, "rerank_provider", "cohere")
 
     class FakeProvider(rerank_provider.RerankProvider):
@@ -77,7 +77,8 @@ def test_model_rerank_rescores_and_truncates(monkeypatch) -> None:
     result = _apply_model_rerank("问题", chunks, top_k=2)
 
     assert result is not None
-    assert [chunk.content for chunk in result] == ["内容1", "内容2"]
+    # 返回完整候选（不截断），截断交给外层 select_diverse 做 MMR
+    assert [chunk.content for chunk in result] == ["内容1", "内容2", "内容0"]
     assert result[0].score == 0.9
 
 
